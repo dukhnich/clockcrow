@@ -1,0 +1,18 @@
+{
+  "name": "clockcrow",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "inquirer": "^12.9.6"
+  },
+  "devDependencies": {
+    "jest": "^30.1.3"
+  }
+}
