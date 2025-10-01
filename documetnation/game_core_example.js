@@ -10,7 +10,7 @@ class Task {
         this.#options = options;
         this.#score = score;
         if (Task.none === undefined) {
-            Task.none = "Game over!";
+            Task.none = ["Game over!"];
             Task.none = new Task(Task.none);
         }
     }
@@ -22,7 +22,7 @@ class Task {
         try {
             const data = fs.readFileSync(file, 'utf8');
             let [desc, opt, s] = data.split(/---\r?\n/);
-            let description = desc.trim();
+            let description = desc.trim().split(/\r?\n/);
             opt = opt.trim();
             let options = opt != ''? opt.split(/\r?\n/) : [];
             let score = parseInt(s);
@@ -43,7 +43,7 @@ class Hint {
         this.#hint = hint;
         this.#cost = cost;
         if (Hint.none === undefined) {
-            Hint.none = "No hints available";
+            Hint.none = ["No hints available"];
             Hint.none = new Hint(Hint.none);
         }
     }
@@ -54,7 +54,7 @@ class Hint {
         try {
             const data = fs.readFileSync(file, 'utf8');
             let [desc, c] = data.split(/---\r?\n/);
-            let hint = desc.trim();
+            let hint = desc.trim().split(/\r?\n/);
             let cost = parseInt(c);
             return new Hint(hint, cost);
         } catch (err) {
@@ -228,4 +228,96 @@ class Game {
     get score() { return this.#score; }
 };
 
-module.exports = { Task, Hint, Cache, FileCache, Saver, FileSaver, AutoSaver, Game };
+// Optional Flyweight for default Scene render implementation. It has no intrinsic state.
+class Scene {
+    render(task) {
+        let scene = "";
+        for (const descr of task.description) {
+            scene += descr + "\n";
+        }
+        scene += "\n";
+        for (const opt of task.options) {
+            scene += opt + "\n";
+        }
+        return scene;
+    }
+};
+
+// Flyweight for Scene rendering. It has intrinsic state - background image and extrinsic state - task to render.
+class SceneFlyweight extends Scene {
+    #background;
+    constructor(file) {
+        super();
+        this.#background = [];
+        try {
+            const data = fs.readFileSync(file, 'utf8');
+            this.#background = data.split(/\r?\n/);
+        } catch (err) {
+            if (err.code !== 'ENOENT') {
+                console.error(err);
+            }
+        }
+    }
+
+    render(task) {
+        let scene = "";
+        const MARGIN = 2;
+        if (this.#background.length < task.description.length + task.options.length + MARGIN + 1) {
+            return scene;
+        }
+        let bgIt = this.#background[Symbol.iterator]();
+        let magin = "";
+        for (let i = 0; i < MARGIN; ++i) {
+            scene += bgIt.next().value + "\n";
+            magin += " ";
+        }
+        for (const descr of task.description) {
+            scene += bgIt.next().value + magin + descr + "\n";
+        }
+        scene += bgIt.next().value + "\n";
+        for (const opt of task.options) {
+            scene += bgIt.next().value + magin + opt + "\n";
+        }
+        for (const line of bgIt) {
+            scene += line + "\n";
+        }
+        return scene;
+    }
+};
+
+// Flyweight "factory" that stores flyweights
+class SceneFlyweightFactory {
+    #flyweights;
+    constructor(flyweights) {
+        this.#flyweights = flyweights;
+    }
+
+    get(key) {
+        let file = this.#flyweights[key];
+        return file != null? new SceneFlyweight(file) : new Scene();
+    }
+};
+
+// Facade that hides game complexity from the client
+class GameFacade {
+    #saver;
+    #game;
+    #sceneFactory;
+    constructor() {
+        this.#saver = new FileSaver("lection5/examples/save.txt");
+        this.#game = this.#saver.load();
+        this.#sceneFactory = new SceneFlyweightFactory({ 'DNGN': "lection11/examples/dungeon.txt" });
+    }
+
+    start() {
+        return this.#sceneFactory.get('DNGN').render(this.#game.task);
+    }
+
+    next(choise) {
+        let save = new AutoSaver(this.#saver, this.#game);
+        this.#game.next(choise);
+        return this.#sceneFactory.get('DNGN').render(this.#game.task);
+    }
+};
+
+module.exports = { Task, Hint, Cache, FileCache, Saver, FileSaver, AutoSaver, Game, Scene, SceneFlyweight, SceneFlyweightFactory, GameFacade };
