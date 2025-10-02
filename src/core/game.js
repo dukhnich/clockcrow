@@ -1,0 +1,78 @@
+import { Hint } from "./hint.js";
+import { InitialState } from "./state.js";
+import { Inventory } from "../inventory/inventory.js";
+import { TimeManager } from "./timeManager.js";
+import { TraitsManager } from "./traitsManager.js";
+import { CLIInquirerView } from "../view/view.js";
+import { Cache } from "./cache";
+import { Location } from "../scene/scene";
+
+export class Game {
+    #cache;
+    #score;
+    #state;
+    #view;
+    #traitsManager;
+    #timeManager;
+    #inventory;
+    #currentLoc;
+    constructor(
+        cache,
+        score,
+        state,         // GameState instance (can be IntroState, etc.)
+        view,          // IGameView implementation (CLI, Web, etc.)
+        traitsManager,  // TraitManager instance
+        timeManager,   // TimeManager instance
+        inventory,     // Inventory instance
+        currentLoc    // Current Location instance
+    ) {
+        this.#cache = cache || new Cache("1");
+        this.#score = score || 0;
+        this.#state = state || new InitialState();
+        this.#view = view || new CLIInquirerView();
+        this.#traitsManager = traitsManager || new TraitsManager();
+        this.#timeManager = timeManager || new TimeManager();
+        this.#inventory = inventory || new Inventory();
+        this.#currentLoc = currentLoc || new Location("Nowhere", [], ["You are nowhere."] );
+    }
+    get task() { return this.#cache.currentTask; }
+    getHint() {
+        let hint = this.#cache.currentHint;
+        if (this.#score < hint.cost) {
+            return Hint.none;
+        }
+        this.#score -= hint.cost;
+        return hint;
+    }
+    start() {
+        this.#state.onEnter(this);
+    }
+    changeState(newState) {
+        if (this.#state) {
+            this.#state.onExit(this);
+        }
+        this.#state = newState;
+        if (this.#state) {
+            this.#state.onEnter(this);
+        }
+    }
+    get state() { return this.#state; }
+    get view() { return this.#view; }
+    get traitsManager() { return this.#traitsManager; }
+    get timeManager() { return this.#timeManager; }
+    get inventory() { return this.#inventory; }
+    next(choice) {
+        if (choice == 0 || choice > this.task.options.length ||
+            !this.#cache.update(this.#cache.key + choice)) {
+            return false;
+        }
+        this.#score += this.task.score;
+        return true;
+    }
+
+    get history() { return this.#cache.key; }
+    get level() { return this.history.length; }
+    get score() { return this.#score; }
+};
+
+export default { Game };
