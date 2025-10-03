@@ -43,16 +43,67 @@ describe('TraitsManager', () => {
         expect(manager.getTotalBySide('dark')).toBe(3);
     });
 
-    test('should update trait value', () => {
+    test('should update trait value and notify with description', () => {
+        const notifications = [];
+        manager.subscribe(data => notifications.push(data));
         expect(manager.updateTraitValue('Bravery', 9)).toBe(true);
         expect(manager.getTraitByName('Bravery').value).toBe(9);
+        expect(notifications[0]).toEqual({
+            name: 'Bravery',
+            description: 'desc',
+            side: 'light',
+            value: 9
+        });
         expect(manager.updateTraitValue('Unknown', 5)).toBe(false);
     });
 
-    test('should increment and decrement trait', () => {
+    test('should increment and decrement trait and notify with description', () => {
+        const notifications = [];
+        manager.subscribe(data => notifications.push(data));
         expect(manager.incrementTrait('Wisdom', 2)).toBe(true);
         expect(manager.getTraitByName('Wisdom').value).toBe(5);
+        expect(notifications[0]).toEqual({
+            name: 'Wisdom',
+            description: 'desc',
+            side: 'dark',
+            value: 5
+        });
         expect(manager.decrementTrait('Kindness', 1)).toBe(true);
         expect(manager.getTraitByName('Kindness').value).toBe(1);
+        expect(notifications[1]).toEqual({
+            name: 'Kindness',
+            description: 'desc',
+            side: 'light',
+            value: 1
+        });
+    });
+
+    test('should reset traits and notify with description', () => {
+        const notifications = [];
+        manager.subscribe(data => notifications.push(data));
+        manager.resetTraits();
+        expect(manager.getTraitByName('Bravery').value).toBe(0);
+        expect(manager.getTraitByName('Wisdom').value).toBe(0);
+        expect(manager.getTraitByName('Kindness').value).toBe(0);
+        expect(notifications).toEqual([
+            {
+                name: 'Bravery',
+                description: 'desc',
+                side: 'light',
+                value: 0
+            },
+            {
+                name: 'Wisdom',
+                description: 'desc',
+                side: 'dark',
+                value: 0
+            },
+            {
+                name: 'Kindness',
+                description: 'desc',
+                side: 'light',
+                value: 0
+            }
+        ]);
     });
 });

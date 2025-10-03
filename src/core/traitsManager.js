@@ -20,6 +20,14 @@ class Trait {
     set value(v) {
         this.#value = Math.max(Trait.MIN, Math.min(Trait.MAX, v));
     }
+    get dto() {
+        return {
+            name: this.#name,
+            description: this.#description,
+            side: this.#side,
+            value: this.#value,
+        };
+    }
     increment(amount = 1) {
         this.value = this.#value + amount;
     }
@@ -48,7 +56,7 @@ class TraitsManager extends Observer {
         const trait = this.getTraitByName(name);
         if (trait) {
             trait.value = value;
-            this.notify(trait);
+            this.notify(trait.dto);
             return true;
         }
         return false;
@@ -57,7 +65,7 @@ class TraitsManager extends Observer {
         const trait = this.getTraitByName(name);
         if (trait) {
             trait.increment(amount);
-            this.notify(trait);
+            this.notify(trait.dto);
             return true;
         }
         return false;
@@ -66,10 +74,16 @@ class TraitsManager extends Observer {
         const trait = this.getTraitByName(name);
         if (trait) {
             trait.decrement(amount);
-            this.notify(trait);
+            this.notify(trait.dto);
             return true;
         }
         return false;
+    }
+    resetTraits() {
+        this.#traits.forEach(t => {
+            t.value = 0;
+            this.notify(t.dto);
+        });
     }
 }
 module.exports = { Trait, TraitsManager };
