@@ -1,3 +1,4 @@
+const { Observer } = require("../utils/observer.js");
 class Item {
     #name;
     #description;
@@ -7,6 +8,7 @@ class Item {
     }
     get name() { return this.#name; }
     get description() { return this.#description; }
+    effect() { return null; }
 };
 class TraitItem extends Item {
     #traitsValues;
@@ -14,20 +16,41 @@ class TraitItem extends Item {
         super(name, description);
         this.#traitsValues = traitsValues;
     }
+    get traitsValues() { return this.#traitsValues; }
 };
 
 class Inventory {
     #items;
-    constructor(items) {
+    #observer;
+    constructor(items = []) {
         this.#items = items;
+        this.#observer = new Observer();
     }
     get(index) { return this.#items[index]; }
-    set(index, item) { this.#items[index] = item; }
-    add(item) { this.#items.push(item); }
+    set(index, item) {
+        if (!(item instanceof Item)) throw new TypeError("Only Item instances allowed");
+        this.#items[index] = item;
+    }
+    subscribe(listener) { this.#observer.subscribe(listener); }
+    unsubscribe(listener) { this.#observer.unsubscribe(listener); }
+    notify(event) { this.#observer.notify(event); }
+    add(item) {
+        if (!(item instanceof Item)) throw new TypeError("Only Item instances allowed");
+        this.#items.push(item);
+        if (item instanceof TraitItem) {
+            this.notify({ type: "traitItemAdded", item });
+        }
+        this.notify({ type: "itemAdded", item });
+    }
+
     remove(item) {
         const ix = this.#items.indexOf(item);
         if (ix >= 0) {
             this.#items.splice(ix, 1);
+            if (item instanceof TraitItem) {
+                this.notify({ type: "traitItemRemoved", item });
+            }
+            this.notify({ type: "itemRemoved", item });
             return true;
         }
         return false;
@@ -35,6 +58,12 @@ class Inventory {
     has(item) {
         return this.#items.includes(item);
     }
+    getAll() {
+        return [...this.#items];
+    }
+    resetInventory() {
+        this.#items = [];
+    }
 };
 
-export { Item, TraitItem, Inventory };
+module.exports = { Item, TraitItem, Inventory };

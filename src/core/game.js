@@ -4,8 +4,8 @@ import { Inventory } from "../inventory/inventory.js";
 import { TimeManager } from "./timeManager.js";
 import { TraitsManager } from "./traitsManager.js";
 import { CLIInquirerView } from "../view/view.js";
-import { Cache } from "./cache";
-import { Location } from "../scene/scene";
+import { Cache } from "./cache.js";
+import { Location } from "../scene/scene.js";
 
 export class Game {
     #cache;
@@ -34,6 +34,24 @@ export class Game {
         this.#timeManager = timeManager || new TimeManager();
         this.#inventory = inventory || new Inventory();
         this.#currentLoc = currentLoc || new Location("Nowhere", [], ["You are nowhere."] );
+        this.#addListeners();
+    }
+    #addListeners() {
+        this.#addTraitsItemListeners();
+    }
+    #addTraitsItemListeners() {
+        this.#inventory.subscribe((event) => {
+            if (event.type === "traitItemAdded") {
+                event.item.traitsValues.forEach(({ traitName, value }) => {
+                    this.#traitsManager.incrementTrait(traitName, value);
+                });
+            }
+            if (event.type === "traitItemRemoved") {
+                event.item.traitsValues.forEach(({ traitName, value }) => {
+                    this.#traitsManager.decrementTrait(traitName, value);
+                });
+            }
+        });
     }
     get task() { return this.#cache.currentTask; }
     getHint() {
