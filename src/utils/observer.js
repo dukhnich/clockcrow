@@ -1,4 +1,4 @@
-export class Observer {
+class Observer {
     #listeners;
     constructor() {
         this.#listeners = new Set();
@@ -12,8 +12,15 @@ export class Observer {
     }
     notify(data) {
         for (let listener of this.#listeners) {
-            listener(data);
+            try {
+                listener(data);
+            } catch (e) {
+                // Optionally log or handle error
+            }
         }
     }
+    clear() {
+        this.#listeners.clear();
+    }
 }
-export default { Observer };
+module.exports = { Observer };
