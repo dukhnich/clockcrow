@@ -1,4 +1,4 @@
-import { Observer } from "../utils/observer.js";
+const { Observer } = require("../utils/observer.js");
 
 class DaySettings {
     #start
@@ -22,41 +22,50 @@ class DaySettings {
         return !this.isDayHour(hour);
     }
 }
-export class TimeManager extends Observer {
+class TimeManager {
     #startTime;
     #endTime;
     #currentTime;
     #settings;
+    #observer;
     constructor(startTime = 9, endTime = 5, settings = new DaySettings()) {
-        super();
         this.#startTime = startTime;
         this.#endTime = endTime;
         this.#currentTime = this.#startTime;
         this.#settings = settings;
+        this.#observer = new Observer();
     }
     get startTime() { return this.#startTime; }
     get endTime() { return this.#endTime; }
     get currentTime() { return this.#currentTime; }
     set currentTime(value) {
-        if (value >= this.#settings.end) {
-            value -= this.#settings.end;
+        const hour = TimeManager.normalizeTime(value, this.#settings.end);
+        if (
+            (this.#startTime < this.#endTime && hour >= this.#endTime) ||
+            (this.#startTime > this.#endTime && (hour < this.#startTime && hour >= this.#endTime))
+        ) {
+            this.#currentTime = this.#endTime;
+            this.#observer.notify({ time: this.#currentTime, gameOver: true });
+            return;
         }
-        if (value < 0) {
-            value = 0;
-        }
-        if (value > this.#endTime) {
-            value = this.#endTime;
-        }
-        if (this.#currentTime !== value) {
-            this.#currentTime = value;
-            this.notify(this.#currentTime);
+
+        if (this.#currentTime !== hour) {
+            this.#currentTime = hour;
+            this.#observer.notify({ time: this.#currentTime, gameOver: false });
         }
     }
-    tick(hours) {
-        this.currentTime += hours;
+    static normalizeTime(value, end) {
+        let hour = ((value % end) + end) % end;
+        if (hour >= end) hour -= end;
+        if (hour < 0) hour = 0;
+        return hour;
+    }
+    tick(hours = 1) {
+        this.currentTime = this.#currentTime + hours;
     }
     reset() {
         this.currentTime = this.#startTime;
+        this.clearObservers();
     }
     isDay() {
         return this.#settings.isDayHour(this.#currentTime);
@@ -64,6 +73,12 @@ export class TimeManager extends Observer {
     isNight() {
         return this.#settings.isNightHour(this.#currentTime);
     }
+    getTimeWindow() {
+        return this.isDay() ? "day" : "night";
+    }
+    subscribe(listener) { this.#observer.subscribe(listener); }
+    unsubscribe(listener) { this.#observer.unsubscribe(listener); }
+    clearObservers() { this.#observer.clear(); }
 };
 
-export default { TimeManager };
+module.exports = { TimeManager, DaySettings };
