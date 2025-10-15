@@ -205,3 +205,25 @@
 Герой, зібравши комбінацію рис/артефактів, опиняється на вежі; 
 Персонажі-фігури "судять шлях" та пояснюють, “ким” герой стане для майбутньої історії міста (і башти); 
 Півень реінтерпретується — і як символ пошуків, і як хранитель годинника/часу.
+
+---
+
+## Summary Table of Locations, Events, Traits, Conditions, and Strategic Patterns
+
+| Location                | Event/Choice                        | Trait(s) Affected       | Conditional Notes                | Strategic Pattern                |
+|-------------------------|-------------------------------------|-------------------------|----------------------------------|----------------------------------|
+| Ярмарок (HUB)           | Hear rumors, help, contest          |                         | Daytime only                     | Gathering, rumor, quest start    |
+| Таверна                 | Boasting, risk game, temptation     | +Vanity, +Dissoluteness | NPC: Марнославець, Турок         | Risk/reward, temptation          |
+| Таверна                 | Courageous act, honest play         | +Wisdom                 | Player choice                    | Moral test, honesty vs. glory    |
+| Лавка                   | Trade, bargain, pawn                | +Greed                  | NPC: Скряга, daytime             | Trade-off, shortcut, profit      |
+| Лавка                   | Refuse trade, help servant          | +Curiosity              | NPC: Служниця                    | Guidance, honest path            |
+| Храм                    | Charity, prayer, help               | +Mercy                  | Unique night states              | Donation, spiritual growth       |
+| Храм                    | Moral dilemma, evening ritual       | +Mercy, +Wisdom         | Evening/night event              | Dilemma, blessing                |
+| Бібліотека              | Solve riddle, seek knowledge        | +Curiosity, +Knowledge  | NPC: Літописець, daytime         | Riddle, altruism/selfishness     |
+| Бібліотека (дах)        | Stargazing, cosmic hint             | +Curiosity              | NPC: Зіркар, night only          | Discovery, cosmic hints          |
+| Міст                    | Refuse help, cold dialogue          | +Indifference           | NPC: Смерть/Некромант            | Existential test, mystical hint  |
+| Міст                    | Mystical scene, courage             | +Vanity                 | Night, NPC: Музикант             | Mystical scene, courage          |
+| Магістрат (вежа)        | Philosophical debate, moral choice  | +Indifference +Knowledge| Night: філософи, day: builders   | Debate, transformation           |
+| Магістрат (вежа)        | Guide students, resolve dilemma     | +Wisdom                 | Night, trait-dependent           | School of thought, guidance      |
+
+---
