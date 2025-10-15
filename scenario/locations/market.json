@@ -1,0 +1,57 @@
+[
+  {
+    "id": "market",
+    "name": "Central Market (HUB)",
+    "scenes": [
+      {
+        "from": 9,
+        "to": 9,
+        "description": [
+          "A bustling market full of traders, scents, and festive chaos."
+        ],
+        "npcIds": ["merchant"],
+        "eventIds": ["cockEscape"],
+        "optionIds": [
+          "talkToMerchant"
+        ]
+      },
+      {
+        "from": 9.5,
+        "to": 21,
+        "description": [
+          "A bustling market full of traders, scents, and festive chaos.",
+        "The market is lively with various stalls and colorful banners. Merchants shout to advertise their goods, and townsfolk haggle over prices. The aroma of fresh bread, spices, and roasted meats fills the air. In the center, a small stage is set up for a contest, drawing a crowd eager to watch the spectacle."
+        ],
+        "npcIds": ["oldLady", "showman", "charlatan"],
+        "eventIds": ["rumorThread"],
+        "optionIds": [
+          "hearRumors",
+          "talkSeekers",
+          "getHintOrBuyTrinket",
+          "joinContest",
+          "goToTavern",
+          "goToTemple",
+          "goToLibrary",
+          "goToBridge",
+          "goToPawnshop",
+          "goToTownhall"
+        ]
+      },
+      {
+        "from": 21,
+        "to": 9,
+        "description": [
+          "The market is closed. Stalls are empty and silent."
+        ],
+        "optionIds": [
+          "goToTavern",
+          "goToTemple",
+          "goToLibrary",
+          "goToBridge",
+          "goToPawnshop",
+          "goToTownhall"
+        ]
+      }
+    ]
+  }
+]
