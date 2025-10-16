@@ -1,0 +1,25 @@
+{
+  "talkMerchant": {
+    "text": "Підійти до торговця — можливо, й мені півень на щастя?",
+    "effect": "startDialogue",
+    "requirements": []
+  },
+
+  "hearRumors": {
+    "text": "Підслухати базарні поголоси й бабські бувальщини",
+    "effect": "showRumors",
+    "requirements": []
+  },
+
+  "stealHorse": {
+    "text": "Спробувати викрасти коня прямо з-під носа недолугого недолікаря",
+    "effect": "stealHorse",
+    "requirements": []
+  },
+
+  "go": {
+    "text": "Посунутися з ярмарку новою стежкою.",
+    "effect": "goToLocation",
+    "requirements": []
+  }
+}

@@ -1,12 +1,14 @@
 {
   "id": "market",
-  "name": "Central Market (HUB)",
+  "name": "Свійський Ринок",
   "scenes": [
     {
       "from": 9,
       "to": 9,
       "description": [
-        "A bustling market full of traders, scents, and festive chaos."
+        "Місто гуде — на столах пузаті калачі, вареники й цеберця з яйцями, жарти ллються, як квас.",
+        "Поміж лавками вправний торговець підморгує гостям і тягає за ріпку покупців:",
+        "“Кому півника на щастя?!”"
       ],
       "npcIds": ["merchant"],
       "eventIds": ["cockEscape"],
@@ -18,16 +20,15 @@
       "from": 9.5,
       "to": 21,
       "description": [
-        "A bustling market full of traders, scents, and festive chaos.",
-      "The market is lively with various stalls and colorful banners. Merchants shout to advertise their goods, and townsfolk haggle over prices. The aroma of fresh bread, spices, and roasted meats fills the air. In the center, a small stage is set up for a contest, drawing a crowd eager to watch the spectacle."
+        "Ярмарок вирує! Товкотня біля балагану, завзяті сварки біля пиріжків, якась баба вигукує:",
+        "“Купи на щастя, чи хоча б на пиріг!”, а шарлатан із табуретки пропонує ліки від усього на світі.",
+        "Лунають крутолобі жарти — місто сміється кожним каменем."
       ],
       "npcIds": ["oldLady", "showman", "charlatan"],
-      "eventIds": ["rumorThread"],
+      "eventIds": ["rumorThread", "horseTheft"],
       "optionIds": [
         "hearRumors",
-        "talkSeekers",
-        "getHintOrBuyTrinket",
-        "joinContest",
+        "stealHorse",
         "go"
       ],
       "path": [
@@ -43,7 +44,9 @@
       "from": 21,
       "to": 9,
       "description": [
-        "The market is closed. Stalls are empty and silent."
+        "Площа спить. Порожні ятки стоять привидами, на бруківці валяється недоїдений калач і перо півня.",
+        "У жовтому сяйві місяця видно вежу з яєчних шкаралупок, яку напевно поставило нудьгуюче маля.",
+        "У нічному затінку ще довго чути відлуння денного гомону."
       ],
       "optionIds": [
         "go"
