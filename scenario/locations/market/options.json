@@ -14,7 +14,7 @@
   "stealHorse": {
     "text": "Спробувати викрасти коня прямо з-під носа недолугого недолікаря",
     "effect": "stealHorse",
-    "requirements": []
+    "requirements": ["locationHas:horse"]
   },
 
   "go": {

@@ -7,11 +7,12 @@
       "to": 9,
       "description": [
         "Місто гуде — на столах пузаті калачі, вареники й цеберця з яйцями, жарти ллються, як квас.",
-        "Поміж лавками вправний торговець підморгує гостям і тягає за ріпку покупців:",
+        "Поміж лавками вправний торговець підморгує гостям і сує їм мішок, з якого сторче пір'я :",
         "“Кому півника на щастя?!”"
       ],
       "npcIds": ["merchant"],
       "eventIds": ["cockEscape"],
+      "itemsIds": ["cock"],
       "optionIds": [
         "talkToMerchant"
       ]
@@ -25,7 +26,8 @@
         "Лунають крутолобі жарти — місто сміється кожним каменем."
       ],
       "npcIds": ["oldLady", "showman", "charlatan"],
-      "eventIds": ["rumorThread", "horseTheft"],
+      "eventIds": ["rumorThread", "horseTheft", "horseTheftFailed"],
+      "itemsIds": ["horse"],
       "optionIds": [
         "hearRumors",
         "stealHorse",
