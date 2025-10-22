@@ -1,3 +1,5 @@
+const fs = require("fs");
+const path = require("path");
 const inquirer = require("inquirer");
 class IGameView {
     constructor() {
@@ -11,8 +13,9 @@ class IGameView {
     async promptText(question) {
         throw new Error("Method 'promptText()' must be implemented.");
     }
-    async promptChoice(question, choicesArray) {
-        throw new Error("Method 'promptChoice()' must be implemented.");
+    // choicesArray: string[] | { id?, name?, value?, text? }[], opts?: { inline?: boolean }
+    async promptChoice(question, choicesArray, opts = {}) {
+      throw new Error("Method 'promptChoice()' must be implemented.");
     }
     showStatus(statusObj) {
         throw new Error("Method 'showStatus()' must be implemented.");
@@ -52,17 +55,67 @@ class CLIInquirerView extends IGameView {
         return answers['response'];
     }
 
-    async promptChoice(question, choicesArray) {
-        const answers = await this.#inquirer.prompt([
-            {
-                type: 'list',
-                name: 'response',
-                message: question,
-                choices: choicesArray
-            }
-        ]);
-        return answers['response'];
+  /**
+   * Prompt a choice.
+   * - Inline mode (default): prints numbered options under the scene and asks for a number.
+   * - List mode: uses Inquirer list (set { inline: false }).
+   * choicesArray: string[] | { id?, name?, value?, text? }[]
+   * Returns the selected value: for objects -> id/value; for strings -> the string.
+   */
+  async promptChoice(question, choicesArray, opts = {}) {
+    const inline = opts.inline !== false;
+
+    const items = this.#normalizeChoices(choicesArray);
+
+    if (!inline) {
+      const answers = await this.#inquirer.prompt([
+        {
+          type: 'list',
+          name: 'response',
+          message: question,
+          choices: items.map(i => ({ name: i.label, value: i.value }))
+        }
+      ]);
+      return answers.response;
     }
+
+    if (question) console.log(question);
+    this.#printNumberedOptions(items);
+
+    const answers = await this.#inquirer.prompt([
+      {
+        type: 'input',
+        name: 'index',
+        message: `Enter a number 1..${items.length}:`,
+        validate: (val) => {
+          const n = parseInt(String(val).trim(), 10);
+          if (Number.isNaN(n)) return 'Please enter a number.';
+          if (n < 1 || n > items.length) return `Enter between 1 and ${items.length}.`;
+          return true;
+        },
+        filter: (val) => parseInt(String(val).trim(), 10) - 1
+      }
+    ]);
+
+    return items[answers.index].value;
+  }
+
+  #normalizeChoices(choicesArray) {
+    const arr = Array.isArray(choicesArray) ? choicesArray : [];
+    return arr.map(c => {
+      if (typeof c === 'string') return { label: c, value: c };
+      const label = c.text || c.name || c.id || c.value || '';
+      const value = c.id ?? c.value ?? label;
+      return { label, value };
+    });
+  }
+
+  #printNumberedOptions(items) {
+    for (let i = 0; i < items.length; i++) {
+      console.log(`${i + 1}) ${items[i].label}`);
+    }
+    console.log('');
+  }
 
     showStatus(statusObj) {
         console.log("Status:");
@@ -71,9 +124,99 @@ class CLIInquirerView extends IGameView {
         }
     }
 
-    showScene(scene) {
-        console.log(`Scene: ${scene}`);
+  // scene: {
+  //   location: { id, name, background? /* string path | string[] lines */ },
+  //   from?, to?, description: string|string[], options: ({id,name}|string)[], currentNpc?: { id, name, text }
+  // }
+  async showScene(scene) {
+    // data-first DTO
+    const dto = scene && typeof scene === "object" ? scene : null;
+    if (!dto) { console.log("No scene data."); return; }
+
+    const body = [];
+
+    // Title
+    const title = dto.location && (dto.location.name || dto.location.id);
+    if (title) {
+      body.push(title);
+      body.push("");
     }
+
+    // Description
+    if (Array.isArray(dto.description)) {
+      for (const d of dto.description) body.push(d);
+    } else if (typeof dto.description === 'string' && dto.description) {
+      body.push(dto.description);
+    }
+    body.push('');
+
+    // NPC section
+    if (dto.currentNpc && (dto.currentNpc.name || dto.currentNpc.text)) {
+      const label = dto.currentNpc.name ? String(dto.currentNpc.name) : 'NPC';
+      const npcLines = typeof dto.currentNpc.text === 'string'
+        ? dto.currentNpc.text.split(/\r?\n/)
+        : (Array.isArray(dto.currentNpc.text) ? dto.currentNpc.text : []);
+      if (npcLines.length === 0) {
+        body.push(`${label}:`);
+      } else {
+        body.push(`${label}: ${npcLines[0]}`);
+        for (let i = 1; i < npcLines.length; i++) body.push(npcLines[i]);
+      }
+      body.push('');
+    }
+
+    // Background
+    const bg = this.#loadBackgroundLines(dto.location);
+    this.#renderColumns(bg, body, 2, "  ");
+
+    const choices = Array.isArray(dto.options) ? dto.options : [];
+    if (!choices.length) return null;
+
+    return await this.promptChoice('', choices, { inline: true });
+  }
+  #loadBackgroundLines(location) {
+    if (!location || typeof location !== "object") return [];
+    // array of lines provided
+    if (Array.isArray(location.background)) return location.background.slice();
+
+    // explicit path or default per location id
+    let bgPath = null;
+    if (typeof location.background === "string") {
+      bgPath = location.background;
+    } else if (location.id) {
+      bgPath = path.join("scenario", "locations", location.id, "background.txt");
+    }
+    if (!bgPath) return [];
+
+    // normalize simple filenames into location folder
+    if (!path.isAbsolute(bgPath) && !bgPath.includes(path.sep) && location.id) {
+      bgPath = path.join("scenario", "locations", location.id, bgPath);
+    }
+
+    try {
+      const data = fs.readFileSync(bgPath, "utf8");
+      return data.split(/\r?\n/);
+    } catch {
+      return [];
+    }
+  }
+
+  #renderColumns(backgroundLines, bodyLines, marginTop = 2, spacer = "  ") {
+    const bg = Array.isArray(backgroundLines) ? backgroundLines : [];
+    const body = Array.isArray(bodyLines) ? bodyLines : [];
+
+    if (bg.length === 0) { for (const l of body) console.log(l); return; }
+
+    const leftWidth = bg.reduce((w, l) => Math.max(w, (l || "").length), 0);
+    const totalRows = Math.max(bg.length, marginTop + body.length);
+
+    for (let row = 0; row < totalRows; row++) {
+      const bgLine = (bg[row] !== undefined) ? bg[row].padEnd(leftWidth, " ") : "".padEnd(leftWidth, " ");
+      const textIndex = row - marginTop;
+      const textLine = (textIndex >= 0 && textIndex < body.length) ? body[textIndex] : "";
+      console.log(bgLine + spacer + textLine);
+    }
+  }
     showDialog(dialog) {
         console.log(`Dialog: ${dialog}`);
     }
