@@ -1,8 +1,12 @@
 {
   "id": "market",
   "name": "Свійський Ринок",
+  "background": "background.txt",
+  "startSceneId": "MT00",
   "scenes": [
     {
+      "id": "MT00",
+      "locationId": "market",
       "from": 9,
       "to": 9,
       "description": [
@@ -14,11 +18,13 @@
       "eventIds": ["cockEscape"],
       "itemsIds": ["cock"],
       "optionIds": [
-        "talkToMerchant"
+        "talk:merchant"
       ]
     },
     {
-      "from": 9.5,
+      "id": "MT01",
+      "locationId": "market",
+      "from": 9.01,
       "to": 21,
       "description": [
         "Ярмарок вирує! Товкотня біля балагану, завзяті сварки біля пиріжків, якась баба вигукує:",
@@ -43,6 +49,8 @@
       ]
     },
     {
+      "id": "MT02",
+      "locationId": "market",
       "from": 21,
       "to": 9,
       "description": [

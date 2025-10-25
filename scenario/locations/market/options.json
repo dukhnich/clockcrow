@@ -1,25 +1,37 @@
 {
-  "talkMerchant": {
+  "talk:merchant": {
     "text": "Підійти до торговця — можливо, й мені півень на щастя?",
-    "effect": "startDialogue",
-    "requirements": []
+    "effect": "talk:merchant",
+    "requirements": ["not:currentNpc:merchant"],
+    "time": 0
   },
 
   "hearRumors": {
     "text": "Підслухати базарні поголоси й бабські бувальщини",
     "effect": "showRumors",
-    "requirements": []
+    "requirements": [],
+    "time": 0.4
   },
 
   "stealHorse": {
     "text": "Спробувати викрасти коня прямо з-під носа недолугого недолікаря",
     "effect": "stealHorse",
-    "requirements": ["locationHas:horse"]
+    "requirements": ["locationHas:horse"],
+    "time": 1
+  },
+
+  "buy:cock": {
+    "text": "Купити півня за монету",
+    "effect": "cockRunAway",
+    "effectsText": "Півень вислизнув з рук і втік геть!",
+    "requirements": ["playerHas:money:1"],
+    "time": 0.1
   },
 
   "go": {
     "text": "Посунутися з ярмарку новою стежкою.",
     "effect": "goToLocation",
-    "requirements": []
+    "requirements": [],
+    "time": 1
   }
 }
