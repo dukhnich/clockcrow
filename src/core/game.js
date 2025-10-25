@@ -1,13 +1,13 @@
-import { Hint } from "./hint.js";
-import { InitialState } from "./state.js";
-import { Inventory } from "../inventory/inventory.js";
-import { TimeManager } from "./timeManager.js";
-import { TraitsManager } from "./traitsManager.js";
-import { CLIInquirerView } from "../view/view.js";
-import { Cache } from "./cache.js";
-import { Location } from "../scene/scene.js";
+const { Hint } = require("./hint.js");
+const { InitialState } = require("./state.js");
+const { Inventory } = require("../inventory/inventory.js");
+const { TimeManager } = require("./timeManager.js");
+const { TraitsManager } = require("./traitsManager.js");
+const { CLIInquirerView } = require("../view/view.js");
+const { Cache } = require("./cache.js");
+const { Location } = require("../scene/scene.js");
 
-export class Game {
+class Game {
     #cache;
     #score;
     #state;
@@ -93,4 +93,4 @@ export class Game {
     get score() { return this.#score; }
 };
 
-export default { Game };
+module.exports = { Game };

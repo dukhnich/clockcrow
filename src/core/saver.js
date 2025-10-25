@@ -1,7 +1,7 @@
-import path from "node:path";
-import fs from "node:fs";
-import { Game } from "./game.js";
-import { FileCache } from "./cache.js";
+const path = require("node:path");
+const fs = require("node:fs");
+const { Game } = require("./game.js");
+const { FileCache } = require("./cache.js");
 
 class Saver {
     save(game) { return false; };
@@ -62,4 +62,4 @@ class AutoSaver {
     }
 };
 
-export default { Saver, FileSaver, AutoSaver };
+module.exports = { Saver, FileSaver, AutoSaver };
