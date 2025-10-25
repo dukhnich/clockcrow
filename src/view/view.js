@@ -1,6 +1,8 @@
 const fs = require("fs");
 const path = require("path");
-const inquirer = require("inquirer");
+const inquirerModule = require("inquirer");
+const inquirer = inquirerModule && inquirerModule.default ? inquirerModule.default : inquirerModule;
+
 class IGameView {
     constructor() {
         if (new.target === IGameView) {
@@ -153,15 +155,17 @@ class CLIInquirerView extends IGameView {
     // NPC section
     if (dto.currentNpc && (dto.currentNpc.name || dto.currentNpc.text)) {
       const label = dto.currentNpc.name ? String(dto.currentNpc.name) : 'NPC';
+      body.push(`${label.toUpperCase()}`);
+      if (Array.isArray(dto.currentNpc.description)) {
+        for (const d of dto.currentNpc.description) body.push(d);
+      } else if (typeof dto.currentNpc.description === 'string' && dto.description) {
+        body.push(dto.currentNpc.description);
+      }
+      body.push('')
       const npcLines = typeof dto.currentNpc.text === 'string'
         ? dto.currentNpc.text.split(/\r?\n/)
         : (Array.isArray(dto.currentNpc.text) ? dto.currentNpc.text : []);
-      if (npcLines.length === 0) {
-        body.push(`${label}:`);
-      } else {
-        body.push(`${label}: ${npcLines[0]}`);
-        for (let i = 1; i < npcLines.length; i++) body.push(npcLines[i]);
-      }
+      npcLines.forEach((l) => body.push(l));
       body.push('');
     }
 
@@ -172,7 +176,7 @@ class CLIInquirerView extends IGameView {
     const choices = Array.isArray(dto.options) ? dto.options : [];
     if (!choices.length) return null;
 
-    return await this.promptChoice('', choices, { inline: true });
+    return await this.promptChoice('', choices, { inline: false });
   }
   #loadBackgroundLines(location) {
     if (!location || typeof location !== "object") return [];
@@ -182,16 +186,17 @@ class CLIInquirerView extends IGameView {
     // explicit path or default per location id
     let bgPath = null;
     if (typeof location.background === "string") {
-      bgPath = location.background;
+      // resolve any non-absolute path relative to the location folder
+      if (!path.isAbsolute(location.background) && location.id) {
+        const baseDir = path.join("scenario", "locations", location.id);
+        bgPath = path.resolve(baseDir, location.background);
+      } else {
+        bgPath = location.background;
+      }
     } else if (location.id) {
       bgPath = path.join("scenario", "locations", location.id, "background.txt");
     }
     if (!bgPath) return [];
-
-    // normalize simple filenames into location folder
-    if (!path.isAbsolute(bgPath) && !bgPath.includes(path.sep) && location.id) {
-      bgPath = path.join("scenario", "locations", location.id, bgPath);
-    }
 
     try {
       const data = fs.readFileSync(bgPath, "utf8");
