@@ -13,7 +13,7 @@
       ],
       "eventIds": ["start"],
       "optionIds": [
-        "start"
+        "go:market"
       ]
     }
   ]
