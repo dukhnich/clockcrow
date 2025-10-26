@@ -79,198 +79,6 @@ class Scene {
   }
 }
 
-class Location {
-  #info
-  #id
-  #baseDir
-  #scenes
-  constructor(id, info = {}, baseDir = process.cwd(), scenes = []) {
-    this.#id = id;
-    this.#info = info || {};
-    this.#baseDir = baseDir;
-    this.#scenes = new Map();
-    scenes.forEach(s => this.scenes.set(s.id, s));
-  }
-  get name() {
-    return this.info.title || this.info.name || this.id;
-  }
-
-  get background() {
-    // can be string path or array of lines; view handles both
-    return this.info.background;
-  }
-  get info() { return { ...this.#info }; }
-
-  get scenes() { return this.#scenes; }
-
-  getScene(id) {
-    return this.scenes.get(id) || null;
-  }
-
-  get startSceneId() {
-    if (this.info.startSceneId && this.scenes.has(this.info.startSceneId)) {
-      return this.info.startSceneId;
-    }
-    const first = [...this.scenes.keys()][0];
-    return first || null;
-  }
-
-  static loadFromDir(dir) {
-    const infoPath = path.join(dir, "info.json");
-    const raw = fs.readFileSync(infoPath, "utf8");
-    const info = JSON.parse(raw);
-    const id = info.id || path.basename(dir);
-
-    const scenes = [];
-
-    if (Array.isArray(info.scenes)) {
-      for (const s of info.scenes) {
-        if (s && (s.id || s.title || s.name)) {
-          scenes.push(Scene.fromInfoObject(s, dir));
-        }
-      }
-    }
-
-    const scenesDir = path.join(dir, "scenes");
-    if (fs.existsSync(scenesDir) && fs.statSync(scenesDir).isDirectory()) {
-      for (const entry of fs.readdirSync(scenesDir, { withFileTypes: true })) {
-        if (!entry.isDirectory()) continue;
-        const sceneDir = path.join(scenesDir, entry.name);
-        const infoFile = path.join(sceneDir, "info.json");
-        if (fs.existsSync(infoFile)) {
-          scenes.push(Scene.loadFromDir(sceneDir));
-        }
-      }
-    }
-
-    return new Location(id, info, dir, scenes);
-  }
-}
-
-class LocationFlyweight {
-  #id;
-  #name;
-  #background;
-
-  constructor(id, name, background) {
-    this.#id = id;
-    this.#name = name || id;
-    // keep raw descriptor: string path | string[] | object
-    this.#background = background;
-  }
-
-  toDTO() {
-    return {
-      id: this.#id,
-      name: this.#name,
-      background: this.#background
-    };
-  }
-}
-
-class LocationFlyweightStore {
-  #map;
-  constructor() {
-    this.#map = new Map();
-  }
-
-  ensure(locationId, info = {}) {
-    if (!locationId) throw new Error("locationId is required");
-    if (this.#map.has(locationId)) return this.#map.get(locationId);
-    const name = info.title || info.name || locationId;
-    const background = info.background;
-    const fw = new LocationFlyweight(locationId, name, background);
-    this.#map.set(locationId, fw);
-    return fw;
-  }
-
-  getDTO(locationId) {
-    const fw = this.#map.get(locationId);
-    if (!fw) throw new Error(`Location flyweight missing for ${locationId}`);
-    return fw.toDTO();
-  }
-}
-
-class OptionStore {
-  #baseDir;
-  #cache = new Map(); // locationId -> Map<optionId, optionObj>
-
-  constructor(baseDir = path.join("scenario", "locations")) {
-    this.#baseDir = baseDir;
-  }
-
-  #ensureLoaded(locationId) {
-    if (this.#cache.has(locationId)) return;
-    const file = path.join(this.#baseDir, locationId, "options.json");
-    const map = new Map();
-    if (fs.existsSync(file)) {
-      const json = JSON.parse(fs.readFileSync(file, "utf8"));
-      for (const [id, obj] of Object.entries(json)) {
-        map.set(id, { id, ...obj });
-      }
-    }
-    this.#cache.set(locationId, map);
-  }
-
-  get(locationId, optionId) {
-    this.#ensureLoaded(locationId);
-    const map = this.#cache.get(locationId);
-    return map.get(optionId) || null;
-  }
-
-  getMany(locationId, ids = []) {
-    this.#ensureLoaded(locationId);
-    const map = this.#cache.get(locationId);
-    return ids
-      .map(id => map.get(id))
-      .filter(Boolean)
-      .map(o => ({ ...o })); // shallow clone
-  }
-}
-
-class NpcStore {
-  #baseDir;
-  #cache = new Map(); // locationId -> Map<npcId, npcObj>
-
-  constructor(baseDir = path.join("scenario", "locations")) {
-    this.#baseDir = baseDir;
-  }
-
-  #ensureLoaded(locationId) {
-    if (this.#cache.has(locationId)) return;
-    const file = path.join(this.#baseDir, locationId, "npc.json");
-    const map = new Map();
-    if (fs.existsSync(file)) {
-      const arr = JSON.parse(fs.readFileSync(file, "utf8"));
-      for (const npc of arr) {
-        const id = npc.id || npc.name;
-        map.set(id, { id, ...npc });
-      }
-    }
-    this.#cache.set(locationId, map);
-  }
-
-  get(locationId, npcId) {
-    this.#ensureLoaded(locationId);
-    const map = this.#cache.get(locationId);
-    return map.get(npcId) || null;
-  }
-
-  getOptionsForNpc(locationId, npcId) {
-    const npc = this.get(locationId, npcId);
-    if (!npc) return [];
-    return Array.isArray(npc.options) ? npc.options.slice() : [];
-  }
-  list(locationId) {
-    this.#ensureLoaded(locationId);
-    const map = this.#cache.get(locationId);
-    return Array.from(map.values()).map(n => ({ id: n.id, name: n.name || n.id }));
-  }
-  listIds(locationId) {
-    return this.list(locationId).map(n => n.id);
-  }
-}
-
 class SceneAssembler {
   constructor({ optionStore, npcStore, locationStore }) {
     this.optionStore = optionStore;
@@ -318,7 +126,7 @@ class SceneAssembler {
     const ids = scene.optionIds || [];
     const raw = this.optionStore.getMany(scene.locationId, ids);
     return raw
-      .filter(o => this.#passesRequirements(o, ctx))
+      .filter(o => this.#passesRequirements(o, ctx, scene.id))
       .map(o => ({ id: o.id, name: o.text || o.name || o.id, meta: o }));
   }
 
@@ -327,7 +135,7 @@ class SceneAssembler {
     const ids = this.npcStore.getOptionsForNpc(scene.locationId, npcId);
     const raw = this.optionStore.getMany(scene.locationId, ids);
     return raw
-      .filter(o => this.#passesRequirements(o, ctx))
+      .filter(o => this.#passesRequirements(o, ctx, scene.id))
       .map(o => ({ id: o.id, name: o.text || o.name || o.id, meta: o }));
   }
 
@@ -451,4 +259,4 @@ class SceneController {
   }
 }
 
-module.exports = { Scene, Location, LocationFlyweight, LocationFlyweightStore, SceneAssembler, OptionStore, SceneController, NpcStore };
+module.exports = { Scene, SceneAssembler, SceneController };

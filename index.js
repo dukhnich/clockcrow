@@ -26,40 +26,29 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const { CLIInquirerView } = require("./src/view/view.js");
+const { FileJsonCache } = require("./src/scene/file-json-cache.js");
+const { OptionStore } = require("./src/scene/option-store.js");
+const { NpcStore } = require("./src/scene/npc-store.js");
+const { LocationFlyweightStore } = require("./src/scene/location.js");
+
 const {
   Scene,
-  LocationFlyweightStore,
-  OptionStore,
-  NpcStore,
   SceneAssembler,
   SceneController
 } = require("./src/scene/scene.js");
 
-function readJsonSafe(file, fallback) {
-  try { return JSON.parse(fs.readFileSync(file, "utf8")); }
-  catch { return fallback; }
-}
-function loadLocationInfo(baseDir, locationId) {
-  const dir = path.join(baseDir, locationId);
-  const info = readJsonSafe(path.join(dir, "info.json"), {});
-  return {
-    title: info.title || info.name || locationId,
-    description: info.description || "",
-    path: Array.isArray(info.path) ? info.path : [],
-    startSceneId: info.startSceneId || "center",
-    // sceneOptions shape in info.json:
-    // { "<sceneId>": ["optA","optB"], ... }
-    sceneOptions: (info.sceneOptions && typeof info.sceneOptions === "object") ? info.sceneOptions : {}
-  };
-}
-
 async function main() {
+  const jsonPool = new FileJsonCache();
   const baseDir = path.join(process.cwd(), "scenario", "locations");
+  const optionStore = new OptionStore(baseDir, jsonPool);
+  const npcStore = new NpcStore(baseDir, jsonPool);
+  const locationStore = new LocationFlyweightStore();
+
   const locationId = "market";
 
   // Load location info.json with embedded scenes
-  const info = readJsonSafe(path.join(baseDir, locationId, "info.json"), {});
-  if (!info || typeof info !== "object") throw new Error("Invalid location info.json");
+  const info = jsonPool.readJson(path.join(baseDir, locationId, "info.json"), {});
+  locationStore.ensure(locationId, { title: info.name || info.title || locationId, background: info.background });
 
   const startSceneId = info.startSceneId
     || (Array.isArray(info.scenes) && info.scenes[0] && info.scenes[0].id)
@@ -74,14 +63,6 @@ async function main() {
     optionIds: Array.isArray(sceneObj.optionIds) ? sceneObj.optionIds : [],
     path: Array.isArray(sceneObj.path) ? sceneObj.path : (Array.isArray(info.path) ? info.path : [])
   });
-
-  // Stores and flyweights
-  const optionStore = new OptionStore(baseDir);
-  const npcStore = new NpcStore(baseDir);
-  const locationStore = new LocationFlyweightStore();
-
-  // Ensure location; CLIInquirerView will auto-load `background.txt` by id
-  locationStore.ensure(locationId, { title: info.name || info.title || locationId, background: info.background });
 
   // Wire view + controller
   const view = new CLIInquirerView();
