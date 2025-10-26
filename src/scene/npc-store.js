@@ -5,9 +5,7 @@ const { BaseLocationStore } = require("./base-location-store.js");
 class NpcStore extends BaseLocationStore {
   loadLocationMap(locationId) {
     const file = path.join(this.baseDir, locationId, "npc.json");
-    const arr = this.fileCache
-      ? this.fileCache.readJson(file, [])
-      : (require("node:fs").existsSync(file) ? JSON.parse(require("node:fs").readFileSync(file, "utf8")) : []);
+    const arr = this.fileCache?.readJson(file, []) || [];
     const map = new Map();
     for (const npc of Array.isArray(arr) ? arr : []) {
       const id = npc && (npc.id || npc.name);

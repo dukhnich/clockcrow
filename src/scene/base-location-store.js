@@ -1,10 +1,12 @@
+const { FileJsonCache } = require("./file-json-cache.js");
+
 class BaseLocationStore {
   #baseDir;
   #fileCache;
   #byLocation;
   constructor(baseDir = require("node:path").join("scenario", "locations"), fileCache) {
     this.#baseDir = baseDir;
-    this.#fileCache = fileCache; // shared pool (FileJsonCache)
+    this.#fileCache = fileCache || new FileJsonCache(); // shared pool (FileJsonCache)
     this.#byLocation = new Map(); // locationId -> Map<id, obj>
   }
   get baseDir() { return this.#baseDir; }

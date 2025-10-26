@@ -4,93 +4,113 @@ const { Inventory } = require("../inventory/inventory.js");
 const { TimeManager } = require("./timeManager.js");
 const { TraitsManager } = require("./traitsManager.js");
 const { CLIInquirerView } = require("../view/view.js");
-const { Cache } = require("./cache.js");
-const { Location } = require("../scene/scene.js");
+
+const { SceneCache } = require("./cache.js");
+const { SceneController, SceneAssembler } = require("../scene/scene.js");
+const { FileJsonCache } = require("../scene/file-json-cache.js");
+const { OptionStore } = require("../scene/option-store.js");
+const { NpcStore } = require("../scene/npc-store.js");
+const { LocationFlyweightStore } = require("../scene/location.js");
+const path = require("node:path");
+
 
 class Game {
-    #cache;
-    #score;
-    #state;
-    #view;
-    #traitsManager;
-    #timeManager;
-    #inventory;
-    #currentLoc;
-    constructor(
-        cache,
-        score,
-        state,         // GameState instance (can be IntroState, etc.)
-        view,          // IGameView implementation (CLI, Web, etc.)
-        traitsManager,  // TraitManager instance
-        timeManager,   // TimeManager instance
-        inventory,     // Inventory instance
-        currentLoc    // Current Location instance
-    ) {
-        this.#cache = cache || new Cache("1");
-        this.#score = score || 0;
-        this.#state = state || new InitialState();
-        this.#view = view || new CLIInquirerView();
-        this.#traitsManager = traitsManager || new TraitsManager();
-        this.#timeManager = timeManager || new TimeManager();
-        this.#inventory = inventory || new Inventory();
-        this.#currentLoc = currentLoc || new Location("Nowhere", [], ["You are nowhere."] );
-        this.#addListeners();
-    }
-    #addListeners() {
-        this.#addTraitsItemListeners();
-    }
-    #addTraitsItemListeners() {
-        this.#inventory.subscribe((event) => {
-            if (event.type === "traitItemAdded") {
-                event.item.traitsValues.forEach(({ traitName, value }) => {
-                    this.#traitsManager.incrementTrait(traitName, value);
-                });
-            }
-            if (event.type === "traitItemRemoved") {
-                event.item.traitsValues.forEach(({ traitName, value }) => {
-                    this.#traitsManager.decrementTrait(traitName, value);
-                });
-            }
-        });
-    }
-    get task() { return this.#cache.currentTask; }
-    getHint() {
-        let hint = this.#cache.currentHint;
-        if (this.#score < hint.cost) {
-            return Hint.none;
-        }
-        this.#score -= hint.cost;
-        return hint;
-    }
-    start() {
-        this.#state.onEnter(this);
-    }
-    changeState(newState) {
-        if (this.#state) {
-            this.#state.onExit(this);
-        }
-        this.#state = newState;
-        if (this.#state) {
-            this.#state.onEnter(this);
-        }
-    }
-    get state() { return this.#state; }
-    get view() { return this.#view; }
-    get traitsManager() { return this.#traitsManager; }
-    get timeManager() { return this.#timeManager; }
-    get inventory() { return this.#inventory; }
-    next(choice) {
-        if (choice == 0 || choice > this.task.options.length ||
-            !this.#cache.update(this.#cache.key + choice)) {
-            return false;
-        }
-        this.#score += this.task.score;
-        return true;
-    }
+  #state;
+  #view;
+  #traitsManager;
+  #timeManager;
+  #inventory;
 
-    get history() { return this.#cache.key; }
-    get level() { return this.history.length; }
-    get score() { return this.#score; }
+  #sceneCache;
+  #sceneController;
+  constructor(opts = {}) {
+    this.#state = opts.state || new InitialState();
+    this.#view = opts.view || new CLIInquirerView();
+    this.#traitsManager = opts.traitsManager || new TraitsManager();
+    this.#timeManager = opts.timeManager || new TimeManager();
+    this.#inventory = opts.inventory || new Inventory();
+
+    const baseDir = (opts.scene && opts.scene.baseDir) || path.join(process.cwd(), "scenario", "locations");
+    const jsonPool = (opts.scene && opts.scene.jsonPool) || new FileJsonCache();
+    const optionStore = (opts.scene && opts.scene.optionStore) || new OptionStore(baseDir, jsonPool);
+    const npcStore = (opts.scene && opts.scene.npcStore) || new NpcStore(baseDir, jsonPool);
+    const locationStore = (opts.scene && opts.scene.locationStore) || new LocationFlyweightStore();
+
+    this.#sceneCache = new SceneCache({
+      baseDir,
+      jsonPool,
+      optionStore,
+      npcStore,
+      locationStore,
+      start: opts.start || { locationId: "market", sceneId: this.#deriveStartSceneId(baseDir, jsonPool, "market") }
+    });
+
+    const assembler = new SceneAssembler({ optionStore, npcStore, locationStore });
+    this.#sceneController = new SceneController({ view: this.#view, assembler });
+
+    this.#addListeners();
+  }
+  #addListeners() {
+      this.#addTraitsItemListeners();
+  }
+  #addTraitsItemListeners() {
+      this.#inventory.subscribe((event) => {
+          if (event.type === "traitItemAdded") {
+              event.item.traitsValues.forEach(({ traitName, value }) => {
+                  this.#traitsManager.incrementTrait(traitName, value);
+              });
+          }
+          if (event.type === "traitItemRemoved") {
+              event.item.traitsValues.forEach(({ traitName, value }) => {
+                  this.#traitsManager.decrementTrait(traitName, value);
+              });
+          }
+      });
+  }
+
+  // Derive start scene from location info.json
+  #deriveStartSceneId(baseDir, jsonPool, locationId) {
+    const infoPath = path.join(baseDir, locationId, "info.json");
+    const info = jsonPool.readJson(infoPath, {});
+    return info.startSceneId
+      || (Array.isArray(info.scenes) && info.scenes[0] && info.scenes[0].id)
+      || "start";
+  }
+
+  // getHint() {
+  //     let hint = this.#cache.currentHint;
+  //     if (this.#score < hint.cost) {
+  //         return Hint.none;
+  //     }
+  //     this.#score -= hint.cost;
+  //     return hint;
+  // }
+
+  get state() { return this.#state; }
+  get view() { return this.#view; }
+  get traitsManager() { return this.#traitsManager; }
+  get timeManager() { return this.#timeManager; }
+  get inventory() { return this.#inventory; }
+  get currentScene() { return this.#sceneCache.currentScene(); }
+  get currentLocationId() { return (this.#sceneCache.pointer || {}).locationId; }
+  get history() { return this.#sceneCache.history; }
+  async runStep(ctx = {}) {
+    const scene = this.currentScene;
+    if (!scene) return null;
+
+    const result = await this.#sceneController.run(scene, ctx);
+    this.#sceneCache.applyResult(result);
+    return result;
+  }
+  changeState(newState) {
+    if (this.#state) {
+        this.#state.onExit(this);
+    }
+    this.#state = newState;
+    if (this.#state) {
+        this.#state.onEnter(this);
+      }
+  }
 };
 
 module.exports = { Game };
