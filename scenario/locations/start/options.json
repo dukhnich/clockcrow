@@ -1,7 +1,7 @@
 {
-  "go:market": {
+  "start": {
     "text": "Ступити під міські брами",
-    "effect": "go:market",
+    "effect": ["start", "go:market:MT00"],
     "requirements": [],
     "time": 0
   }
