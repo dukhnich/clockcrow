@@ -1,6 +1,6 @@
-import fs from "node:fs";
+const fs = require("node:fs");
 
-export class Hint {
+class Hint {
     #hint;
     #cost;
     constructor(hint, cost = 0) {
@@ -30,4 +30,4 @@ export class Hint {
     }
 };
 
-export default { Hint };
+module.exports = { Hint };
