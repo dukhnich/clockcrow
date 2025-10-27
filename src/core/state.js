@@ -1,10 +1,10 @@
-export class State {
+class State {
     handle() {}
 }
 
-export class InitialState extends State {
+class InitialState extends State {
     handle() {
         console.log("InitialState: handle");
     }
 }
-export default { State, InitialState };
+module.exports = { State, InitialState };

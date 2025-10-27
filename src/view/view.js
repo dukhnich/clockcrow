@@ -46,6 +46,9 @@ class CLIInquirerView extends IGameView {
     set inquirer(inquirerInstance) {
         this.#inquirer = inquirerInstance;
     }
+    get inquirer() {
+      return this.#inquirer;
+    }
     showMessage(message) {
         console.log(message);
     }
