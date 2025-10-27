@@ -1,5 +1,6 @@
 const { FileSaver, AutoSaver } = require("./src/core/saver.js");
 const { Game } = require("./src/core/game.js");
+const path = require("node:path");
 
 class GameFacade {
     #saver;
@@ -23,16 +24,18 @@ class GameFacade {
 };
 
 async function main() {
-  // Optional custom start:
-  const game = new Game({ start: { locationId: 'start' } });
-  // const game = new Game();
+  const saver = new FileSaver(path.join(process.cwd(), "saves", "slot1.json"));
+  const saved = saver.load();
 
-  // Minimal loop: run scenes until exit/falsy or Ctrl+C
-  // Adjust the stop condition to your controller's contract if needed.
-  // Each iteration shows the scene via CLIInquirerView and applies the result.
+  const game = new Game({
+    start: saved?.pointer || { locationId: "start" }
+  });
+
+  const autosave = new AutoSaver(saver, game);
+
   for (;;) {
-    const result = await game.runStep();
-    if (!result || result === 'exit' || (typeof result === 'object' && result.exit)) break;
+    const result = await autosave.after(() => game.runStep());
+    if (!result || result === "exit" || (typeof result === "object" && result.exit)) break;
   }
 }
 
