@@ -86,6 +86,20 @@ class SceneAssembler {
     this.locationStore = locationStore; // LocationFlyweightStore
   }
 
+  buildChoices(scene, ctx = {}) {
+    const talkChoices = this.#talkChoices(scene, ctx);
+    const sceneChoices = this.#sceneOptions(scene, ctx);
+    const npcChoices = ctx.currentNpcId ? this.#npcOptions(scene, ctx.currentNpcId, ctx) : [];
+    const goChoices = this.#locationChoices(scene);
+
+    return this.#mergeUniqueById([
+      ...talkChoices,   // { id, name }
+      ...npcChoices,    // { id, name, meta }
+      ...sceneChoices,  // { id, name, meta }
+      ...goChoices      // { id, name }
+    ]);
+  }
+
   toViewDTO(scene, ctx = {}) {
     const location = this.locationStore.getDTO(scene.locationId);
 
@@ -94,24 +108,7 @@ class SceneAssembler {
       ? this.#npcToView(scene.locationId, currentNpcId)
       : null;
 
-    // Explicit talk choices so user can pick an NPC
-    const talkChoices = this.#talkChoices(scene, ctx);
-
-    // Only scene options for the current scene id
-    const sceneChoices = this.#sceneOptions(scene, ctx);
-
-    // Only npc options for the current NPC (if any)
-    const npcChoices = currentNpcId ? this.#npcOptions(scene, currentNpcId, ctx) : [];
-
-    // Optional navigation choices
-    const goChoices = this.#locationChoices(scene);
-
-    const merged = this.#mergeUniqueById([
-      ...talkChoices,
-      ...npcChoices,
-      ...sceneChoices,
-      ...goChoices
-    ]);
+    const merged = this.buildChoices(scene, ctx);
 
     return {
       location,
@@ -234,9 +231,10 @@ class SceneAssembler {
 // Handles "talk:<id>" selection to pick NPC and refresh merged options.
 // Returns chosen action id or navigation "go:<locationId>" to the caller.
 class SceneController {
-  constructor({ view, assembler }) {
+  constructor({ view, assembler, events }) {
     this.view = view;
     this.assembler = assembler;
+    this.events = events; // EventsManager
   }
 
   async run(scene, initialCtx = {}) {
@@ -244,6 +242,7 @@ class SceneController {
 
     while (true) {
       const dto = this.assembler.toViewDTO(scene, ctx);
+      const choices = this.assembler.buildChoices(scene, ctx);
       const picked = await this.view.showScene(dto);
       if (!picked) return null;
 
@@ -251,6 +250,24 @@ class SceneController {
       if (picked.startsWith("talk:")) {
         ctx.currentNpcId = picked.split(":")[1];
         continue;
+      }
+      const choice = choices.find(c => c.id === picked);
+      const opt = choice && choice.meta ? choice.meta : null;
+      if (opt) {
+        if (opt.result) await this.view.showChoiceResult(opt);
+
+        let effects = [];
+        const eff = opt.effect != null ? opt.effect : opt.effects;
+        if (Array.isArray(eff)) effects = eff.slice();
+        else if (eff != null) effects = [eff];
+
+        for (const e of effects) {
+          if (typeof e === "string" && e.startsWith("go:")) {
+            this.events?.emit("go", e);
+          } else {
+            this.events?.emit("effect", e);
+          }
+        }
       }
 
       // Otherwise return the selected action (game will handle effect)
