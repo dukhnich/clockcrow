@@ -11,6 +11,8 @@ const { FileJsonCache } = require("../scene/file-json-cache.js");
 const { OptionStore } = require("../scene/option-store.js");
 const { NpcStore } = require("../scene/npc-store.js");
 const { LocationFlyweightStore } = require("../scene/location.js");
+const { EventsManager } = require("./eventsManager.js");
+const { MovementManager } = require("./movementManager.js");
 const path = require("node:path");
 
 
@@ -22,6 +24,8 @@ class Game {
   #inventory;
 
   #sceneCache;
+  #movement;
+  #events;
   #sceneController;
   constructor(opts = {}) {
     this.#state = opts.state || new InitialState();
@@ -42,16 +46,29 @@ class Game {
       optionStore,
       npcStore,
       locationStore,
-      start: opts.start || { locationId: "market", sceneId: this.#deriveStartSceneId(baseDir, jsonPool, "market") }
+      start: opts.start || { locationId: "start", sceneId: this.#deriveStartSceneId(baseDir, jsonPool, "market") }
     });
 
+    this.#movement = new MovementManager({ cache: this.#sceneCache });
     const assembler = new SceneAssembler({ optionStore, npcStore, locationStore });
-    this.#sceneController = new SceneController({ view: this.#view, assembler });
+
+    this.#events = new EventsManager();
+    this.#sceneController = new SceneController({ view: this.#view, assembler, events: this.#events });
 
     this.#addListeners();
   }
   #addListeners() {
-      this.#addTraitsItemListeners();
+    this.#addTraitsItemListeners();
+    // Navigation
+    this.#events.on("go", (payload) => {
+      this.#movement.go(payload);
+    });
+
+    // Generic effects hook
+    this.#events.on("effect", (eff) => {
+      // Extend with domain-specific handlers
+      void eff; // no-op by default
+    });
   }
   #addTraitsItemListeners() {
       this.#inventory.subscribe((event) => {

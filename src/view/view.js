@@ -28,7 +28,11 @@ class IGameView {
     showDialog(dialog) {
         throw new Error("Method 'showDialog()' must be implemented.");
     }
-    clear() {
+    showChoiceResult(optionDto) {
+      throw new Error("Method 'showChoiceResult()' must be implemented.");
+    }
+
+  clear() {
         throw new Error("Method 'clear()' must be implemented.");
     }
 }
@@ -177,6 +181,18 @@ class CLIInquirerView extends IGameView {
     if (!choices.length) return null;
 
     return await this.promptChoice('', choices, { inline: false });
+  }
+  async showChoiceResult(optionDto) {
+    if (!optionDto || typeof optionDto !== "object") return true;
+    console.log(`Ви обрали: ${optionDto.text || ""}`);
+    console.log("");
+    const message = optionDto.result || null;
+    if (!message) return true;
+    console.log("Результат:");
+    const lines = Array.isArray(message) ? message : String(message).split(/\r?\n/);
+    for (const l of lines) console.log(l);
+    console.log("");
+    return await this.promptText("Далі...");
   }
   #loadBackgroundLines(location) {
     if (!location || typeof location !== "object") return [];
