@@ -46,6 +46,7 @@ class Game {
       optionStore,
       npcStore,
       locationStore,
+      timeManager: this.#timeManager,
       start: opts.start || { locationId: "start", sceneId: this.#deriveStartSceneId(baseDir, jsonPool, "market") }
     });
 
@@ -53,7 +54,12 @@ class Game {
     const assembler = new SceneAssembler({ optionStore, npcStore, locationStore });
 
     this.#events = new EventsManager();
-    this.#sceneController = new SceneController({ view: this.#view, assembler, events: this.#events });
+    this.#sceneController = new SceneController({
+      view: this.#view,
+      assembler,
+      events: this.#events,
+      timeManager: this.#timeManager,
+    });
 
     this.#addListeners();
   }
@@ -64,10 +70,19 @@ class Game {
       this.#movement.go(payload);
     });
 
-    // Generic effects hook
+    // Advance time if the effect payload carries a time cost
     this.#events.on("effect", (eff) => {
-      // Extend with domain-specific handlers
-      void eff; // no-op by default
+      const t = Number(eff && eff.time);
+      if (t > 0) this.#timeManager.tick(t);
+    });
+
+    // Optional: end-of-day handling (if TimeManager reports gameOver)
+    this.#timeManager.subscribe((e) => {
+      if (e && e.gameOver) {
+        // Could set a flag or emit an event to terminate external loop if needed
+        // Here we just log; the outer loop can decide to stop based on context.
+        console.log("Day ended");
+      }
     });
   }
   #addTraitsItemListeners() {
@@ -115,10 +130,16 @@ class Game {
     const scene = this.currentScene;
     if (!scene) return null;
 
+    this.#view.showTime({
+      time: this.#timeManager.formatTime(this.#timeManager.currentTime),
+      window: this.#timeManager.getTimeWindow()
+    });
+
     const result = await this.#sceneController.run(scene, ctx);
     this.#sceneCache.applyResult(result);
     return result;
   }
+
   changeState(newState) {
     if (this.#state) {
         this.#state.onExit(this);
