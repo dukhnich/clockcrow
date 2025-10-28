@@ -63,6 +63,9 @@ class TimeManager {
     tick(hours = 1) {
         this.currentTime = this.#currentTime + hours;
     }
+    setTime(hour) {
+        this.currentTime = hour;
+    }
     reset() {
         this.currentTime = this.#startTime;
         this.clearObservers();
@@ -79,6 +82,14 @@ class TimeManager {
     subscribe(listener) { this.#observer.subscribe(listener); }
     unsubscribe(listener) { this.#observer.unsubscribe(listener); }
     clearObservers() { this.#observer.clear(); }
+    formatTime(val) {
+      const totalMinutes = Math.round((Number(val) || 0) * 60);
+      const h24 = Math.floor((totalMinutes / 60) % 24);
+      const m = totalMinutes % 60;
+      const hh = String((h24 + 24) % 24).padStart(2, "0");
+      const mm = String((m + 60) % 60).padStart(2, "0");
+      return `${hh}:${mm}`;
+    }
 };
 
 module.exports = { TimeManager, DaySettings };

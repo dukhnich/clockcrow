@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const inquirerModule = require("inquirer");
 const inquirer = inquirerModule && inquirerModule.default ? inquirerModule.default : inquirerModule;
+const chalkPipe = require('chalk-pipe')
 
 class IGameView {
     constructor() {
@@ -133,6 +134,13 @@ class CLIInquirerView extends IGameView {
         }
     }
 
+    showTime({ time, window }) {
+      const day = chalkPipe('yellow.bold');
+      const night = chalkPipe('blue.bold');
+      const text = `⏳ ${time} ${window === 'day' ? '☀️' : '🌙'})`;
+      console.log(window === 'day' ? day(text) : night(text));
+    }
+
   // scene: {
   //   location: { id, name, background? /* string path | string[] lines */ },
   //   from?, to?, description: string|string[], options: ({id,name}|string)[], currentNpc?: { id, name, text }
@@ -146,8 +154,9 @@ class CLIInquirerView extends IGameView {
 
     // Title
     const title = dto.location && (dto.location.name || dto.location.id);
-    if (title) {
-      body.push(title);
+    const titleDecorated = title ? chalkPipe('green.bold')(title.toUpperCase()) : null;
+    if (titleDecorated) {
+      body.push(titleDecorated);
       body.push("");
     }
 

@@ -13,6 +13,7 @@ class SceneCache {
   #npcStore;
   #locationStore;
   #assembler;
+  #timeManager;
 
   #baseDir;
   #ptr;        // { locationId, sceneId }
@@ -24,6 +25,7 @@ class SceneCache {
     this.#optionStore = opts.optionStore || new OptionStore(this.#baseDir, this.#jsonPool);
     this.#npcStore = opts.npcStore || new NpcStore(this.#baseDir, this.#jsonPool);
     this.#locationStore = opts.locationStore || new LocationFlyweightStore();
+    this.#timeManager = opts.timeManager || null;
     this.#assembler = new SceneAssembler({
       optionStore: this.#optionStore,
       npcStore: this.#npcStore,
@@ -47,14 +49,33 @@ class SceneCache {
     return info;
   }
 
+  #isSceneAllowedNow(sceneObj) {
+    if (!sceneObj || !this.#timeManager) return true;
+    const w = (sceneObj.window || "any").toLowerCase();
+    if (w === "any") return true;
+    const now = this.#timeManager.getTimeWindow();
+    return w === now;
+  }
+
   setCurrent(locationId, sceneId) {
     const info = this.#ensureLocation(locationId);
     const exists = Array.isArray(info.scenes) && info.scenes.some(s => s && s.id === sceneId);
-    const resolvedSceneId = exists
+    let resolvedSceneId = exists
       ? sceneId
       : (info.startSceneId
         || (Array.isArray(info.scenes) && info.scenes[0] && info.scenes[0].id)
         || sceneId);
+
+    if (Array.isArray(info.scenes) && this.#timeManager) {
+      const picked = info.scenes.find(s => s && s.id === resolvedSceneId) || null;
+      if (!this.#isSceneAllowedNow(picked)) {
+        const alt = info.scenes.find(s => this.#isSceneAllowedNow(s));
+        if (alt && alt.id) {
+          resolvedSceneId = alt.id;
+        }
+      }
+    }
+
     this.#ptr = { locationId, sceneId: resolvedSceneId };
     this.#history.push({ ...this.#ptr });
     return this.#ptr;
@@ -63,7 +84,6 @@ class SceneCache {
   get pointer() { return this.#ptr; }
   get history() { return this.#history.slice(); }
 
-  // Build a Scene for the current pointer
   currentScene() {
     if (!this.#ptr) return null;
     const { locationId, sceneId } = this.#ptr;

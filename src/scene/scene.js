@@ -231,7 +231,9 @@ class SceneAssembler {
 // Handles "talk:<id>" selection to pick NPC and refresh merged options.
 // Returns chosen action id or navigation "go:<locationId>" to the caller.
 class SceneController {
-  constructor({ view, assembler, events }) {
+  #timeManager
+  constructor({ view, assembler, events, timeManager }) {
+    this.#timeManager = timeManager;
     this.view = view;
     this.assembler = assembler;
     this.events = events; // EventsManager
@@ -254,6 +256,10 @@ class SceneController {
       const choice = choices.find(c => c.id === picked);
       const opt = choice && choice.meta ? choice.meta : null;
       if (opt) {
+        const pickedTime = Number(opt.time);
+        if (pickedTime > 0) {
+          this.#timeManager.tick(pickedTime);
+        }
         if (opt.result) await this.view.showChoiceResult(opt);
 
         let effects = [];
