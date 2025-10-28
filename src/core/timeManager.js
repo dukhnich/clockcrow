@@ -63,6 +63,9 @@ class TimeManager {
     tick(hours = 1) {
         this.currentTime = this.#currentTime + hours;
     }
+    setTime(hour) {
+        this.currentTime = hour;
+    }
     reset() {
         this.currentTime = this.#startTime;
         this.clearObservers();

@@ -16,6 +16,10 @@ class GameFacade {
       start: saved?.pointer || opts.start || { locationId: "start" },
       scene: opts.scene // optional stores injection for tests or custom wiring
     });
+    if (saved?.time) {
+      const tm = this.#game.timeManager;
+      tm.setTime(saved.time);
+    }
 
     this.#autosave = new AutoSaver(this.#saver, this.#game);
   }

@@ -21,6 +21,7 @@ class FileSaver extends Saver {
   save(game) {
     try {
       const scene = game.currentScene;
+      const tm = game.timeManager;
       const data = {
         version: 1,
         pointer: {
@@ -29,6 +30,9 @@ class FileSaver extends Saver {
         },
         history: game.history || []
       };
+      if (tm?.currentTime === "number") {
+        data.time = tm.currentTime;
+      }
       fs.mkdirSync(this.dir, { recursive: true });
       fs.writeFileSync(this.#file, JSON.stringify(data, null, 2), "utf8");
       return true;
@@ -42,7 +46,7 @@ class FileSaver extends Saver {
       const raw = fs.readFileSync(this.#file, "utf8");
       const data = JSON.parse(raw);
       if (!data || !data.pointer) return null;
-      return data; // { version, pointer, history }
+      return data; // { version, pointer, history, time }
     } catch (err) {
       if (err.code !== "ENOENT") {
         console.error(err);
