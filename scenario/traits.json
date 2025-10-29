@@ -1,0 +1,52 @@
+{
+  "traits": [
+    {
+      "name": "Мудрість",
+      "description": "Deep understanding of the world, philosophical reflections",
+      "side": "Light",
+      "id": "wisdom"
+    },
+    {
+      "name": "Милосердя",
+      "description": "Care and help for others",
+      "side": "Light",
+      "id": "mercy"
+    },
+    {
+      "name": "Допитливість",
+      "description": "Search for truth, uncovering mysteries",
+      "side": "Light",
+      "id": "curiosity"
+    },
+    {
+      "name": "Пізнання",
+      "description": "Preservation of knowledge and experience, attention to history",
+      "side": "Light",
+      "id": "knowledge"
+    },
+    {
+      "name": "Марнославство",
+      "description": "Arrogance, desire to be the center of attention",
+      "side": "Dark",
+      "id": "vanity"
+    },
+    {
+      "name": "Жадібність",
+      "description": "Desire for wealth and material gain",
+      "side": "Dark",
+      "id": "greed"
+    },
+    {
+      "name": "Розпусність",
+      "description": "Pursuit of pleasures, temptations, neglect of duties",
+      "side": "Dark",
+      "id": "debauchery"
+    },
+    {
+      "name": "Байдужість",
+      "description": "Emotional detachment, callousness, self-interest",
+      "side": "Dark",
+      "id": "indifference"
+    }
+  ]
+}
