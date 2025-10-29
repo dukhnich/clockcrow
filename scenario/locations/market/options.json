@@ -24,7 +24,7 @@
     "text": "Купити півня за монету",
     "effect": ["cockRunAway", "go:market:MT01"],
     "result": "Півень вислизнув з рук і втік геть!",
-    "requirements": ["playerHas:money:1"],
+    "requirements": ["has:player:money:1"],
     "time": 0.1
   },
 
