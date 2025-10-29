@@ -50,11 +50,41 @@ class SceneCache {
   }
 
   #isSceneAllowedNow(sceneObj) {
-    if (!sceneObj || !this.#timeManager) return true;
-    const w = (sceneObj.window || "any").toLowerCase();
-    if (w === "any") return true;
-    const now = this.#timeManager.getTimeWindow();
-    return w === now;
+    // 1) Explicit window support
+    const win = String(sceneObj.window || "").toLowerCase();
+    if (win === "any") return true;
+    if (win === "day" || win === "night") {
+      return this.#timeManager.getTimeWindow() === win;
+    }
+
+    // 2) Numeric time window: from/to in hours (can wrap midnight)
+    const from = Number(sceneObj.from);
+    const to = Number(sceneObj.to);
+    // If no valid time constraints provided, allow by default
+    if (!Number.isFinite(from) && !Number.isFinite(to)) return true;
+
+    const end = 24;
+    const norm = (v) => {
+      let x = Number(v);
+      if (!Number.isFinite(x)) return NaN;
+      x = ((x % end) + end) % end;
+      return x;
+    };
+
+    const f = norm(from);
+    const t = norm(to);
+    const now = norm(this.#timeManager.currentTime);
+
+    if (Number.isNaN(f) || Number.isNaN(t) || Number.isNaN(now)) return true;
+
+    // Exact hour case (e.g., from=9, to=9 → only at 9:00)
+    if (f === t) return Math.abs(now - f) < 1e-9;
+
+    // Normal range [from, to)
+    if (f < t) return now >= f && now < t;
+
+    // Wrapped range (e.g., 21→9): now in [from, 24) or [0, to)
+    return now >= f || now < t;
   }
 
   setCurrent(locationId, sceneId) {
