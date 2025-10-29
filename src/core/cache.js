@@ -116,8 +116,20 @@ class SceneCache {
 
   currentScene() {
     if (!this.#ptr) return null;
-    const { locationId, sceneId } = this.#ptr;
+    const { locationId } = this.#ptr;
+    let { sceneId } = this.#ptr;
     const info = this.#ensureLocation(locationId);
+    if (Array.isArray(info.scenes) && this.#timeManager) {
+      const picked = info.scenes.find(s => s && s.id === sceneId) || null;
+      if (!this.#isSceneAllowedNow(picked)) {
+        const alt = info.scenes.find(s => this.#isSceneAllowedNow(s));
+        if (alt && alt.id) {
+          // Update pointer silently (no history push)
+          this.#ptr = { locationId, sceneId: alt.id };
+          sceneId = alt.id;
+        }
+      }
+    }
     const sceneObj = (Array.isArray(info.scenes)
       ? info.scenes.find(s => s && s.id === sceneId)
       : null) || {};
@@ -129,53 +141,21 @@ class SceneCache {
     });
   }
 
-  // Advance pointer based on controller result
   applyResult(result) {
     if (!this.#ptr) return this.#ptr;
+    if (result == null) return this.#ptr;
+    console.log("SceneCache.applyResult:", result);
 
-    let nextSceneId = null;
-    let nextLocationId = this.#ptr.locationId;
+    if (typeof result === "object") {
+      const nextSceneId = result.go || result.nextSceneId || result.sceneId || null;
+      const nextLocationId = result.locationId || this.#ptr.locationId;
 
-    if (typeof result === "string") {
-      if (result.startsWith("go:")) {
-        const payload = result.slice(3);
-        const parts = payload.split(":").filter(Boolean);
-
-        if (parts.length >= 2) {
-          // go:locationId:sceneId
-          nextLocationId = parts[0];
-          nextSceneId = parts[1];
-        } else if (parts.length === 1) {
-          const token = parts[0];
-
-          // Try as scene in current location first
-          const currInfo = this.#ensureLocation(this.#ptr.locationId);
-          const isSceneHere = Array.isArray(currInfo.scenes)
-            && currInfo.scenes.some(s => s && s.id === token);
-
-          if (isSceneHere) {
-            // go:sceneId (same location)
-            nextLocationId = this.#ptr.locationId;
-            nextSceneId = token;
-          } else {
-            // go:locationId → jump to that location's startSceneId
-            nextLocationId = token;
-            nextSceneId = null; // will resolve to startSceneId below
-          }
-        }
+      if (nextSceneId) {
+        this.setCurrent(nextLocationId, nextSceneId);
+      } else if (result.locationId && result.locationId !== this.#ptr.locationId) {
+        // Jump to location's default start scene
+        this.setCurrent(result.locationId, undefined);
       }
-    } else if (result && typeof result === "object") {
-      nextSceneId = result.go || result.nextSceneId || result.sceneId || null;
-      if (result.locationId) {
-        nextLocationId = result.locationId;
-      }
-    }
-
-    if (nextSceneId) {
-      this.setCurrent(nextLocationId, nextSceneId);
-    } else if (nextLocationId !== this.#ptr.locationId) {
-      // Move to the location's default start scene
-      this.setCurrent(nextLocationId, undefined);
     }
     return this.#ptr;
   }

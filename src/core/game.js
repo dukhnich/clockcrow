@@ -13,6 +13,8 @@ const { NpcStore } = require("../scene/npc-store.js");
 const { LocationFlyweightStore } = require("../scene/location.js");
 const { EventsManager } = require("./eventsManager.js");
 const { MovementManager } = require("./movementManager.js");
+const { EffectInterpreter } = require('../utils/effectInterpreter.js');
+
 const path = require("node:path");
 
 
@@ -22,6 +24,7 @@ class Game {
   #traitsManager;
   #timeManager;
   #inventory;
+  #effects;
 
   #sceneCache;
   #movement;
@@ -54,11 +57,17 @@ class Game {
     const assembler = new SceneAssembler({ optionStore, npcStore, locationStore });
 
     this.#events = new EventsManager();
+    this.#effects = new EffectInterpreter({
+      events: this.#events,
+      traits: this.#traitsManager,
+      time: this.#timeManager,
+    });
     this.#sceneController = new SceneController({
       view: this.#view,
       assembler,
       events: this.#events,
       timeManager: this.#timeManager,
+      effects: this.#effects,
     });
 
     this.#addListeners();
