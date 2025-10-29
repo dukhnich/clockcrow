@@ -1,6 +1,3 @@
-const fs = require("node:fs");
-const path = require("node:path");
-
 class Scene {
   #id
   #locationId
@@ -227,16 +224,16 @@ class SceneAssembler {
   }
 }
 
-// javascript
 // Handles "talk:<id>" selection to pick NPC and refresh merged options.
 // Returns chosen action id or navigation "go:<locationId>" to the caller.
 class SceneController {
   #timeManager
-  constructor({ view, assembler, events, timeManager }) {
+  constructor({ view, assembler, events, timeManager, effects }) {
     this.#timeManager = timeManager;
     this.view = view;
     this.assembler = assembler;
     this.events = events; // EventsManager
+    this.effects = effects; // EffectInterpreter (injected)
   }
 
   async run(scene, initialCtx = {}) {
@@ -256,24 +253,13 @@ class SceneController {
       const choice = choices.find(c => c.id === picked);
       const opt = choice && choice.meta ? choice.meta : null;
       if (opt) {
-        const pickedTime = Number(opt.time);
-        if (pickedTime > 0) {
-          this.#timeManager.tick(pickedTime);
-        }
         if (opt.result) await this.view.showChoiceResult(opt);
 
-        let effects = [];
-        const eff = opt.effect != null ? opt.effect : opt.effects;
-        if (Array.isArray(eff)) effects = eff.slice();
-        else if (eff != null) effects = [eff];
-
-        for (const e of effects) {
-          if (typeof e === "string" && e.startsWith("go:")) {
-            this.events?.emit("go", e);
-          } else {
-            this.events?.emit("effect", e);
-          }
-        }
+        // Run effects via EffectInterpreter; it will:
+        // - emit 'go' for navigation
+        // - emit 'effect' { time } for time cost
+        const effectDef = opt.effect != null ? opt.effect : opt.effects;
+        await this.effects?.run(effectDef, { timeCost: opt.time });
       }
 
       // Otherwise return the selected action (game will handle effect)
