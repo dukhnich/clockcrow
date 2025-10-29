@@ -30,7 +30,7 @@ class FileSaver extends Saver {
         },
         history: game.history || []
       };
-      if (tm?.currentTime === "number") {
+      if (typeof tm?.currentTime === "number") {
         data.time = tm.currentTime;
       }
       fs.mkdirSync(this.dir, { recursive: true });
