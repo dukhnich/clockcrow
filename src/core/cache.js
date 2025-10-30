@@ -2,7 +2,7 @@ const { Hint } = require("./hint.js");
 
 const path = require("node:path");
 const { Scene, SceneAssembler } = require("../scene/scene.js");
-const { FileJsonCache } = require("../scene/file-json-cache.js");
+const { FileJsonCache } = require("../utils/file-json-cache.js");
 const { OptionStore } = require("../scene/option-store.js");
 const { NpcStore } = require("../scene/npc-store.js");
 const { LocationFlyweightStore } = require("../scene/location.js");

@@ -2,12 +2,13 @@ const { Hint } = require("./hint.js");
 const { InitialState } = require("./state.js");
 const { Inventory } = require("../inventory/inventory.js");
 const { TimeManager } = require("./timeManager.js");
-const { TraitsManager } = require("./traitsManager.js");
+const { TraitsManager } = require("../traits/traitsManager.js");
+const { TraitsStore } = require("../traits/traitsStore.js");
 const { CLIInquirerView } = require("../view/view.js");
 
 const { SceneCache } = require("./cache.js");
 const { SceneController, SceneAssembler } = require("../scene/scene.js");
-const { FileJsonCache } = require("../scene/file-json-cache.js");
+const { FileJsonCache } = require("../utils/file-json-cache.js");
 const { OptionStore } = require("../scene/option-store.js");
 const { NpcStore } = require("../scene/npc-store.js");
 const { LocationFlyweightStore } = require("../scene/location.js");
@@ -33,9 +34,12 @@ class Game {
   constructor(opts = {}) {
     this.#state = opts.state || new InitialState();
     this.#view = opts.view || new CLIInquirerView();
-    this.#traitsManager = opts.traitsManager || new TraitsManager();
     this.#timeManager = opts.timeManager || new TimeManager();
     this.#inventory = opts.inventory || new Inventory();
+
+    const traitsStore = new TraitsStore();
+    const traitModels = traitsStore.getAll();
+    this.#traitsManager = opts.traitsManager || new TraitsManager(traitModels);
 
     const baseDir = (opts.scene && opts.scene.baseDir) || path.join(process.cwd(), "scenario", "locations");
     const jsonPool = (opts.scene && opts.scene.jsonPool) || new FileJsonCache();

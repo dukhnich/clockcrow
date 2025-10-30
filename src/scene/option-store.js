@@ -1,8 +1,8 @@
 // Options: `options.json` is an object { "<id>": { ... } }
 const path = require("node:path");
-const { BaseLocationStore } = require("./base-location-store.js");
+const { BaseStore } = require("../utils/base-store.js");
 
-class OptionStore extends BaseLocationStore {
+class OptionStore extends BaseStore {
   loadLocationMap(locationId) {
     const file = path.join(this.baseDir, locationId, "options.json");
     const json = this.fileCache?.readJson(file, {}) || {};
