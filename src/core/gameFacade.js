@@ -16,9 +16,14 @@ class GameFacade {
       start: saved?.pointer || opts.start || { locationId: "start" },
       scene: opts.scene // optional stores injection for tests or custom wiring
     });
-    if (saved?.time) {
-      const tm = this.#game.timeManager;
-      tm.setTime(saved.time);
+    if (saved?.time != null) {
+      this.#game.timeManager.setTime(saved.time);
+    }
+    if (saved?.traits) {
+      this.#game.setTraitsFromSnapshot(saved.traits);
+    }
+    if (saved?.domainEvents) {
+      this.#game.setDomainEventsFromSnapshot(saved.domainEvents);
     }
 
     this.#autosave = new AutoSaver(this.#saver, this.#game);
@@ -28,7 +33,6 @@ class GameFacade {
   get saver() { return this.#saver; }
   get currentScene() { return this.#game.currentScene; }
   get currentLocationId() { return this.#game.currentLocationId; }
-  get history() { return this.#game.history; }
 
   async step(ctx = {}) {
     return this.#autosave.after(() => this.#game.runStep(ctx));

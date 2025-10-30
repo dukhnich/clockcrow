@@ -26,7 +26,8 @@ class FileSaver extends Saver {
           locationId: game.currentLocationId || null,
           sceneId: scene ? scene.id : null
         },
-        history: game.history || []
+        traits: game.traitsSnapshot || {},
+        domainEvents: game.domainEventsSnapshot || [],
       };
       if (typeof tm?.currentTime === "number") {
         data.time = tm.currentTime;
@@ -44,7 +45,7 @@ class FileSaver extends Saver {
       const raw = fs.readFileSync(this.#file, "utf8");
       const data = JSON.parse(raw);
       if (!data || !data.pointer) return null;
-      return data; // { version, pointer, history, time }
+      return data; // { version, pointer, time?, traits?, domainEvents? }
     } catch (err) {
       if (err.code !== "ENOENT") {
         console.error(err);

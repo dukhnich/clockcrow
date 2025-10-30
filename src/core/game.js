@@ -12,7 +12,8 @@ const { FileJsonCache } = require("../utils/file-json-cache.js");
 const { OptionStore } = require("../scene/option-store.js");
 const { NpcStore } = require("../scene/npc-store.js");
 const { LocationFlyweightStore } = require("../scene/location.js");
-const { EventsManager } = require("./eventsManager.js");
+const { EventLog } = require("../utils/events/eventLog.js");
+const { EventsManager } = require("../utils/events/eventsManager.js");
 const { MovementManager } = require("./movementManager.js");
 const { EffectInterpreter } = require('../utils/effectInterpreter.js');
 
@@ -26,6 +27,7 @@ class Game {
   #timeManager;
   #inventory;
   #effects;
+  #eventLog;
 
   #sceneCache;
   #movement;
@@ -61,10 +63,12 @@ class Game {
     const assembler = new SceneAssembler({ optionStore, npcStore, locationStore });
 
     this.#events = new EventsManager();
+    this.#eventLog = new EventLog();
     this.#effects = new EffectInterpreter({
       events: this.#events,
       traits: this.#traitsManager,
       time: this.#timeManager,
+      eventLog: this.#eventLog,
     });
     this.#sceneController = new SceneController({
       view: this.#view,
@@ -135,10 +139,26 @@ class Game {
   get view() { return this.#view; }
   get traitsManager() { return this.#traitsManager; }
   get timeManager() { return this.#timeManager; }
+  get eventLog() { return this.#eventLog; }
+  get domainEventsSnapshot() {
+    return this.#eventLog.toArray();
+  }
+  get traitsSnapshot() {
+    return Object.fromEntries((this.#traitsManager.traits || []).map(t => [t.name, t.value]));
+  }
   get inventory() { return this.#inventory; }
   get currentScene() { return this.#sceneCache.currentScene(); }
   get currentLocationId() { return (this.#sceneCache.pointer || {}).locationId; }
   get history() { return this.#sceneCache.history; }
+  setTraitsFromSnapshot(obj) {
+    if (!obj || typeof obj !== "object") return;
+    for (const [name, value] of Object.entries(obj)) {
+      this.#traitsManager.updateTraitValue(name, Number(value));
+    }
+  }
+  setDomainEventsFromSnapshot(arr) {
+    this.#eventLog.load(arr);
+  }
   async runStep(ctx = {}) {
     const scene = this.currentScene;
     if (!scene) return null;
@@ -150,6 +170,7 @@ class Game {
 
     const result = await this.#sceneController.run(scene, ctx);
     this.#sceneCache.applyResult(result);
+    console.log(this.#traitsManager.getTraitByName('greed').dto);
     return result;
   }
 
