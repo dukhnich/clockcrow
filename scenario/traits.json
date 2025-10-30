@@ -3,49 +3,49 @@
     {
       "name": "Мудрість",
       "description": "Deep understanding of the world, philosophical reflections",
-      "side": "Light",
+      "side": "light",
       "id": "wisdom"
     },
     {
       "name": "Милосердя",
       "description": "Care and help for others",
-      "side": "Light",
+      "side": "light",
       "id": "mercy"
     },
     {
       "name": "Допитливість",
       "description": "Search for truth, uncovering mysteries",
-      "side": "Light",
+      "side": "light",
       "id": "curiosity"
     },
     {
       "name": "Пізнання",
       "description": "Preservation of knowledge and experience, attention to history",
-      "side": "Light",
+      "side": "light",
       "id": "knowledge"
     },
     {
       "name": "Марнославство",
       "description": "Arrogance, desire to be the center of attention",
-      "side": "Dark",
+      "side": "dark",
       "id": "vanity"
     },
     {
       "name": "Жадібність",
       "description": "Desire for wealth and material gain",
-      "side": "Dark",
+      "side": "dark",
       "id": "greed"
     },
     {
       "name": "Розпусність",
       "description": "Pursuit of pleasures, temptations, neglect of duties",
-      "side": "Dark",
+      "side": "dark",
       "id": "debauchery"
     },
     {
       "name": "Байдужість",
       "description": "Emotional detachment, callousness, self-interest",
-      "side": "Dark",
+      "side": "dark",
       "id": "indifference"
     }
   ]
