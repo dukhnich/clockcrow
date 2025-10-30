@@ -1,8 +1,8 @@
 // NPCs: `npc.json` is an array [{ id|name, ... }]
 const path = require("node:path");
-const { BaseLocationStore } = require("./base-location-store.js");
+const { BaseStore } = require("../utils/base-store.js");
 
-class NpcStore extends BaseLocationStore {
+class NpcStore extends BaseStore {
   loadLocationMap(locationId) {
     const file = path.join(this.baseDir, locationId, "npc.json");
     const arr = this.fileCache?.readJson(file, []) || [];

@@ -1,7 +1,7 @@
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { FileJsonCache } = require("../../src/scene/file-json-cache.js");
+const { FileJsonCache } = require("../../src/utils/file-json-cache.js");
 
 describe("FileJsonCache", () => {
   let tmpDir;

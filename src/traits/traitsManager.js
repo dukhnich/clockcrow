@@ -11,7 +11,7 @@ class Trait {
         this.#name = name;
         this.#description = description;
         this.#side = side;
-        this.value = value;
+        this.#value = value;
     }
     get name() { return this.#name; }
     get description() { return this.#description; }
@@ -29,10 +29,10 @@ class Trait {
         };
     }
     increment(amount = 1) {
-        this.value = this.#value + amount;
+        this.#value = this.#value + amount;
     }
     decrement(amount = 1) {
-        this.value = this.#value - amount;
+        this.#value = this.#value - amount;
     }
 }
 class TraitsManager extends Observer {
@@ -50,7 +50,10 @@ class TraitsManager extends Observer {
         return this.#traits.filter(t => t.side === side);
     }
     getTotalBySide(side) {
-        return this.getTraitsBySide(side).reduce((sum, t) => sum + t.value, 0);
+        return this.getTraitsBySide(side).reduce((sum, t) => {
+          console.log(side, t.name, t.value);
+          return sum + t.value;
+        }, 0);
     }
     updateTraitValue(name, value) {
         const trait = this.getTraitByName(name);

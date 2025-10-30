@@ -1,6 +1,6 @@
 const { FileJsonCache } = require("./file-json-cache.js");
 
-class BaseLocationStore {
+class BaseStore {
   #baseDir;
   #fileCache;
   #byLocation;
@@ -49,4 +49,4 @@ class BaseLocationStore {
     else this.#byLocation.clear();
   }
 }
-module.exports = { BaseLocationStore };
+module.exports = { BaseStore };

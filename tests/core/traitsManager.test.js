@@ -1,4 +1,4 @@
-const { Trait, TraitsManager } = require('../../src/core/traitsManager.js');
+const { Trait, TraitsManager } = require('../../src/traits/traitsManager.js');
 
 describe('Trait', () => {
     test('should clamp value between MIN and MAX', () => {
