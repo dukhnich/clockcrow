@@ -32,6 +32,12 @@ class IGameView {
     showChoiceResult(optionDto) {
       throw new Error("Method 'showChoiceResult()' must be implemented.");
     }
+  showTraitsResult(result) {
+    throw new Error("Method 'showTraitsResult()' must be implemented.");
+  }
+  finishGame() {
+    throw new Error("Method 'finishGame()' must be implemented.");
+  }
 
   clear() {
         throw new Error("Method 'clear()' must be implemented.");
@@ -250,12 +256,51 @@ class CLIInquirerView extends IGameView {
       console.log(bgLine + spacer + textLine);
     }
   }
-    showDialog(dialog) {
+  showTraitsResult(result) {
+    const title = chalkPipe('magenta.bold');
+    const key = chalkPipe('cyan');
+    const val = chalkPipe('white.bold');
+
+    const totals = (result && result.totals) || {};
+    const topTraits = (result && result.topTraits) || [];
+    const selected = result && result.selectedTrait || null;
+    const topValue = (result && Number.isFinite(result.topValue)) ? result.topValue : 0;
+
+    console.log(title("=== Game results ==="));
+    Object.keys(totals).forEach((side) => {
+      console.log(`${key(`Total ${side}`)}: ${val(String(totals[side]))}`);
+    });
+
+    if (topTraits.length > 1) {
+      console.log(`${key('Top trait value')}: ${val(String(topValue))}`);
+      console.log(`${key('Top traits')}: ${val(topTraits.join(', '))}`);
+    }
+    if (selected) console.log(`${key('Result trait')}: ${val(selected)}`);
+    console.log('');
+  }
+
+  // NEW: finish the game and exit
+  finishGame() {
+    const end = chalkPipe('red.bold');
+    console.log(end('Game over.'));
+    process.exit(0);
+  }
+
+  showDialog(dialog) {
         console.log(`Dialog: ${dialog}`);
     }
 
     clear() {
-        console.clear();
+      const out = process.stdout;
+      // Robust clear: clear screen + scrollback where supported
+      if (out && typeof out.write === 'function') {
+        out.write('\x1b[2J'); // Clear screen
+        out.write('\x1b[3J'); // Clear scrollback
+        out.write('\x1b[H');  // Move cursor to home
+      } else {
+        // Fallback: push content off-screen
+        console.log('\n'.repeat(100));
+      }
     }
 }
 module.exports = { IGameView, CLIInquirerView };

@@ -96,9 +96,9 @@ class Game {
     // Optional: end-of-day handling (if TimeManager reports gameOver)
     this.#timeManager.subscribe((e) => {
       if (e && e.gameOver) {
-        // Could set a flag or emit an event to terminate external loop if needed
-        // Here we just log; the outer loop can decide to stop based on context.
-        console.log("Day ended");
+        const result = this.#traitsManager.computeTraitsResult();
+        this.#view.showTraitsResult(result);
+        this.#view.finishGame();
       }
     });
   }
@@ -160,6 +160,7 @@ class Game {
     this.#eventLog.load(arr);
   }
   async runStep(ctx = {}) {
+    this.#view.clear();
     const scene = this.currentScene;
     if (!scene) return null;
 
@@ -170,7 +171,6 @@ class Game {
 
     const result = await this.#sceneController.run(scene, ctx);
     this.#sceneCache.applyResult(result);
-    console.log(this.#traitsManager.getTraitByName('greed').dto);
     return result;
   }
 
