@@ -49,7 +49,8 @@ class DomainEventExpression extends Expression {
   }
 
   async interpret(ctx) {
-    // Emit both namespaced and raw channel for compatibility
+    ctx?.eventLog?.add?.(this.token);
+
     ctx?.events?.emit?.(`effect:${this.token}`, { token: this.token, args: this.args });
     ctx?.events?.emit?.(this.token, { token: this.token, args: this.args });
     return null;
@@ -108,15 +109,21 @@ class EffectFactory {
 }
 
 class EffectInterpreter {
-  constructor({ events, traits, time } = {}) {
+  constructor({ events, traits, time, eventLog } = {}) {
     this.events = events;
     this.traits = traits;
     this.time = time;
+    this.eventLog = eventLog;
   }
 
   async run(effectDef, { timeCost } = {}) {
     const expr = EffectFactory.from(effectDef);
-    const ctx = { events: this.events, traits: this.traits, time: this.time };
+    const ctx = {
+      events: this.events,
+      traits: this.traits,
+      time: this.time,
+      eventLog: this.eventLog,
+    };
     const result = await expr.interpret(ctx);
 
     const t = Number(timeCost);
