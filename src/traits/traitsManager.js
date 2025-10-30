@@ -55,6 +55,43 @@ class TraitsManager extends Observer {
           return sum + t.value;
         }, 0);
     }
+  computeTraitsResult() {
+    const all = this.traits || [];
+
+    const totals = all.reduce((acc, t) => {
+      acc[t.side] = acc[t.side] ? acc[t.side] + t.value : t.value;
+      return acc;
+    });
+
+    const dominantSide = Object.entries(totals).reduce((dom, [side, total]) => {
+      if (total > (totals[dom] || 0)) {
+        return side;
+      }
+      return dom;
+    }, null);
+
+    let maxVal = -Infinity;
+    let topTraits = [];
+    all.forEach((t) => {
+      if (t.value > maxVal) {
+        maxVal = t.value;
+        topTraits = [t.name];
+      } else if (t.value === maxVal) {
+        topTraits.push(t.name);
+      }
+    })
+    const selectedTrait = topTraits.length
+      ? topTraits[Math.floor(Math.random() * topTraits.length)]
+      : null;
+
+    return {
+      totals,
+      dominantSide,
+      topTraits,
+      selectedTrait,
+      topValue: Number.isFinite(maxVal) ? maxVal : 0
+    };
+  }
     updateTraitValue(name, value) {
         const trait = this.getTraitByName(name);
         if (trait) {
