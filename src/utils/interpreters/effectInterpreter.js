@@ -1,8 +1,4 @@
-class Expression {
-  async interpret(ctx) {
-    return null;
-  }
-}
+const { Expression, Interpreter } = require("./baseInterpreter.js");
 
 class GoExpression extends Expression {
   constructor({ locationId = null, sceneId = null }) {
@@ -108,15 +104,16 @@ class EffectFactory {
   }
 }
 
-class EffectInterpreter {
+class EffectInterpreter extends Interpreter {
   constructor({ events, traits, time, eventLog } = {}) {
+    super();
     this.events = events;
     this.traits = traits;
     this.time = time;
     this.eventLog = eventLog;
   }
 
-  async run(effectDef, { timeCost } = {}) {
+  async interpret(effectDef, { timeCost } = {}) {
     const expr = EffectFactory.from(effectDef);
     const ctx = {
       events: this.events,

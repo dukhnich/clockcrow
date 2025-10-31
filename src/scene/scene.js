@@ -1,3 +1,4 @@
+const { RequirementInterpreter } = require("../utils/interpreters/requirementsInterpreter");
 class Scene {
   #id
   #locationId
@@ -59,7 +60,7 @@ class Scene {
       location,                       // { id, name, background: any }
       description: this.description,  // string|string[]
       options: this.options.map(o => ({ id: o.id, name: o.name })),
-      currentNpc                      // { id?, name?, text? } | null
+      currentNpc,                      // { id?, name?, text? } | null
     };
   }
 
@@ -77,11 +78,14 @@ class Scene {
 }
 
 class SceneAssembler {
-  constructor({ optionStore, npcStore, locationStore }) {
+  #req
+  constructor({ optionStore, npcStore, locationStore, req = null }) {
     this.optionStore = optionStore;
     this.npcStore = npcStore;
-    this.locationStore = locationStore; // LocationFlyweightStore
+    this.locationStore = locationStore;
+    this.#req = req || new RequirementInterpreter();
   }
+  get requirementInterpreter() { return this.#req; }
 
   buildChoices(scene, ctx = {}) {
     const talkChoices = this.#talkChoices(scene, ctx);
@@ -115,22 +119,22 @@ class SceneAssembler {
     };
   }
 
-  // Expand option ids from scene.info.optionIds via OptionStore
+  #getOptions(scene, ctx, ids) {
+    const raw = this.optionStore.getMany(scene.locationId, ids);
+    const env = { sceneId: scene.id, locationId: scene.locationId, currentNpcId: ctx.currentNpcId || null, path: scene.path || [] };
+    return raw.filter(o => this.#req.passes(o.requirements, env))
+      .map(o => ({ id: o.id, name: o.text || o.name || o.id, meta: o }));
+  }
+
   #sceneOptions(scene, ctx) {
     const ids = scene.optionIds || [];
-    const raw = this.optionStore.getMany(scene.locationId, ids);
-    return raw
-      .filter(o => this.#passesRequirements(o, ctx, scene.id))
-      .map(o => ({ id: o.id, name: o.text || o.name || o.id, meta: o }));
+    return this.#getOptions(scene, ctx, ids);
   }
 
   // Expand npc.options via OptionStore
   #npcOptions(scene, npcId, ctx) {
     const ids = this.npcStore.getOptionsForNpc(scene.locationId, npcId);
-    const raw = this.optionStore.getMany(scene.locationId, ids);
-    return raw
-      .filter(o => this.#passesRequirements(o, ctx, scene.id))
-      .map(o => ({ id: o.id, name: o.text || o.name || o.id, meta: o }));
+    return this.#getOptions(scene, ctx, ids);
   }
 
   // Turn scene.path into "go:<locationId>" choices; label with location name
@@ -145,12 +149,30 @@ class SceneAssembler {
     });
   }
 
+  #filterNpcs(scene, ctx, listIds) {
+    const env = {
+      sceneId: scene.id,
+      locationId: scene.locationId,
+      currentNpcId: ctx.currentNpcId || null,
+      path: scene.path || [],
+    };
+    const result = [];
+    listIds.forEach(id => {
+      const npc = this.npcStore.get(scene.locationId, id);
+      if (Boolean(this.#req.passes(npc.requirements, env)) && !result.includes(npc)) {
+        result.push(npc);
+      }
+    });
+    return result;
+  }
+
   #talkChoices(scene, ctx) {
-    const npcs = this.npcStore.list(scene.locationId);
+    const list = this.npcStore.list(scene.locationId);
+    const npcs = this.#filterNpcs(scene, ctx, list.map(n => n.id));
     const current = ctx.currentNpcId ? String(ctx.currentNpcId) : null;
     return npcs.map(n => ({
       id: `talk:${n.id}`,
-      name: current === String(n.id) ? `Talk: ${n.name} ✓` : `Talk: ${n.name}`
+      name: current === String(n.id) ? `Talk: ${n.name} ✓` : `Talk: ${n.name}`,
     }));
   }
 
@@ -183,44 +205,6 @@ class SceneAssembler {
       out.push(it);
     }
     return out;
-  }
-
-
-  // Requirements support:
-  // - scene:<id>, currentScene:<id>, not:scene:<id>, not:currentScene:<id>
-  // - npc:<id>, currentNpc:<id>, not:npc:<id>, not:currentNpc:<id>
-  // - existing: not:currentNpc:<id>, not:effect:<name> (left intact if you already use it elsewhere)
-  #passesRequirements(opt, ctx, sceneId) {
-    const reqs = Array.isArray(opt.requirements) ? opt.requirements : [];
-    const currentNpcId = ctx.currentNpcId ? String(ctx.currentNpcId) : null;
-    const currentSceneId = sceneId ? String(sceneId) : null;
-
-    for (const r of reqs) {
-      if (typeof r !== "string") continue;
-
-      // Normalize helpers
-      const is = (prefix) => r.startsWith(prefix + ":") ? r.slice(prefix.length + 1) : null;
-      const neq = (a, b) => String(a) !== String(b);
-
-      // Scene requirements
-      let v = is("scene") ?? is("currentScene");
-      if (v !== null && neq(currentSceneId, v)) return false;
-      v = is("not:scene") ?? is("not:currentScene");
-      if (v !== null && String(currentSceneId) === String(v)) return false;
-
-      // NPC requirements
-      v = is("npc") ?? is("currentNpc");
-      if (v !== null && neq(currentNpcId, v)) return false;
-      v = is("not:npc") ?? is("not:currentNpc");
-      if (v !== null && String(currentNpcId) === String(v)) return false;
-
-      // Backward‑compat for "not:currentNpc:<id>"
-      if (r.startsWith("not:currentNpc:")) {
-        const npc = r.slice("not:currentNpc:".length);
-        if (currentNpcId && String(currentNpcId) === String(npc)) return false;
-      }
-    }
-    return true;
   }
 }
 
@@ -259,7 +243,7 @@ class SceneController {
         // - emit 'go' for navigation
         // - emit 'effect' { time } for time cost
         const effectDef = opt.effect != null ? opt.effect : opt.effects;
-        await this.effects?.run(effectDef, { timeCost: opt.time });
+        await this.effects?.interpret(effectDef, { timeCost: opt.time });
       }
 
       // Otherwise return the selected action (game will handle effect)

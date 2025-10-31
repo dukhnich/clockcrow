@@ -15,7 +15,8 @@ const { LocationFlyweightStore } = require("../scene/location.js");
 const { EventLog } = require("../utils/events/eventLog.js");
 const { EventsManager } = require("../utils/events/eventsManager.js");
 const { MovementManager } = require("./movementManager.js");
-const { EffectInterpreter } = require('../utils/effectInterpreter.js');
+const { EffectInterpreter } = require('../utils/interpreters/effectInterpreter.js');
+const { RequirementInterpreter } = require("../utils/interpreters/requirementsInterpreter");
 
 const path = require("node:path");
 
@@ -60,10 +61,22 @@ class Game {
     });
 
     this.#movement = new MovementManager({ cache: this.#sceneCache });
-    const assembler = new SceneAssembler({ optionStore, npcStore, locationStore });
-
     this.#events = new EventsManager();
     this.#eventLog = new EventLog();
+    const req = new RequirementInterpreter({
+      timeManager: this.#timeManager,
+      eventLog: this.#eventLog,
+      traits: this.#traitsManager,
+      inventory: this.#inventory,
+      locationStore,
+    });
+    const assembler = new SceneAssembler({
+      optionStore,
+      npcStore,
+      locationStore,
+      req,
+    });
+
     this.#effects = new EffectInterpreter({
       events: this.#events,
       traits: this.#traitsManager,
