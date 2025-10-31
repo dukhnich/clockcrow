@@ -1,0 +1,39 @@
+{
+  "helpBuilders": {
+    "text": "Допомогти будівельникам розсортувати каміння",
+    "effect": ["changeTrait:curiosity:1", "gainItem:beer:1"],
+    "requirements": [],
+    "time": 1
+  },
+  "hearBuildersJoke": {
+    "text": "Послухати жарт або байку від майстрів",
+    "effect": ["showJoke"],
+    "requirements": [],
+    "time": 0.2
+  },
+  "joinDebate": {
+    "text": "Увійти у філософський диспут — хто зна, чи не відкриється істина?",
+    "effect": ["enterDebate", "changeTrait:wisdom:1"],
+    "requirements": ["time:window:night"],
+    "time": 1
+  },
+  "resolveDilemma": {
+    "text": "Вирішити моральну дилему чи зіграти роль свого вибору",
+    "effect": ["startMoralChoice", "changeTrait:virtue:1"],
+    "requirements": ["atNight"],
+    "time": 1.5
+  },
+  "becomeMentor": {
+    "text": "Спробувати стати наставником — чи готовий вести за собою?",
+    "effect": ["changeTrait:wisdom:1", "changeTrait:knowledge:1"],
+    "requirements": ["has:trait:wisdom:3"],
+    "time": 2
+  },
+  "go": {
+    "text": "Вийти з магістрату на міську площу чи шукати іншу стежку",
+    "effect": "goToLocation",
+    "requirements": [],
+    "time": 1
+  }
+}
+
