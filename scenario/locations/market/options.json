@@ -16,7 +16,7 @@
   "stealHorse": {
     "text": "Спробувати викрасти коня прямо з-під носа недолугого недолікаря",
     "effect": ["stealHorse", "changeTrait:greed:1", "changeTrait:mercy:-1"],
-    "requirements": ["locationHas:horse"],
+    "requirements": ["has:location:horse"],
     "time": 1
   },
 
