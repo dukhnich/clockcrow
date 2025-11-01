@@ -102,11 +102,9 @@ class SceneAssembler {
   buildPathChoices(scene, ctx = {}, baseGoOpt = null) {
     const ids = Array.isArray(scene.path) ? scene.path : [];
     const result = [];
-
     for (const locId of ids) {
       const id = String(locId);
-      if (!this.locationStore.has(id)) continue; // cache guarantees this for current scene
-
+      if (!this.locationStore.has(id)) continue;
       const dto = this.locationStore.getDTO(id);
       result.push({
         id: `go:${id}`,
@@ -258,34 +256,31 @@ class SceneController {
       if (picked === "go") {
         const baseGoChoice = choices.find(c => c.id === "go");
         const baseOpt = baseGoChoice && baseGoChoice.meta ? baseGoChoice.meta : null;
-
         const pathChoices = this.assembler.buildPathChoices(scene, ctx, baseOpt);
         if (!pathChoices.length) {
           await this.view.showMessage("No available paths.");
           continue;
         }
-
         const selected = await this.view.showPath(pathChoices, { includeBack: true });
         if (!selected || selected === "back") continue;
-
         const chosen = pathChoices.find(c => c.id === selected) || null;
         const meta = chosen && chosen.meta ? chosen.meta : null;
-
         if (meta && meta.result) await this.view.showChoiceResult(meta);
-
         const effectDef = meta && (meta.effect != null ? meta.effect : meta.effects);
         const locId = selected.split(":")[1];
         const timeCost = Number.isFinite(Number(meta?.time))
           ? Number(meta.time)
           : (Number.isFinite(Number(baseOpt?.time)) ? Number(baseOpt.time) : undefined);
-
         if (meta && (meta.effect != null || meta.effects != null)) {
           const effectDef = meta.effect != null ? meta.effect : meta.effects;
-          await this.effects?.interpret(effectDef, { timeCost });
+          const res = await this.effects?.interpret(effectDef, { timeCost });
+          return res ?? null;
         } else {
-          await this.effects?.interpret(`go:${locId}`, { timeCost });
+          const res = await this.effects?.interpret(`go:${locId}`, { timeCost });
+          // If interpreter returns nothing, still return a navigation payload
+          return res ?? { locationId: locId };
         }
-        return null;
+        continue;
       }
 
       const choice = choices.find(c => c.id === picked);
@@ -297,7 +292,8 @@ class SceneController {
         // - emit 'go' for navigation
         // - emit 'effect' { time } for time cost
         const effectDef = opt.effect != null ? opt.effect : opt.effects;
-        await this.effects?.interpret(effectDef, { timeCost: opt.time });
+        const res = await this.effects?.interpret(effectDef, { timeCost: opt.time });
+        if (res != null) return res;
       }
 
       // Otherwise return the selected action (game will handle effect)

@@ -33,7 +33,6 @@ class IGameView {
       throw new Error("Method 'showChoiceResult()' must be implemented.");
     }
   async showPath(paths, opts = {}) { throw new Error("Method 'showPath()' must be implemented."); }
-
   showTraitsResult(result) {
     throw new Error("Method 'showTraitsResult()' must be implemented.");
   }
@@ -157,7 +156,6 @@ class CLIInquirerView extends IGameView {
     const picked = await this.promptChoice('Choose destination:', choices, { inline: false });
     return picked;
   }
-
   async showScene(scene) {
     // data-first DTO
     const dto = scene && typeof scene === "object" ? scene : null;
