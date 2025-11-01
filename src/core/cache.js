@@ -169,7 +169,6 @@ class SceneCache {
   applyResult(result) {
     if (!this.#ptr) return this.#ptr;
     if (result == null) return this.#ptr;
-    console.log("SceneCache.applyResult:", result);
 
     if (typeof result === "object") {
       const nextSceneId = result.go || result.nextSceneId || result.sceneId || null;

@@ -41,7 +41,10 @@ class GameFacade {
   async run(ctx = {}) {
     for (;;) {
       const result = await this.step(ctx);
-      if (!result || result === "exit" || (typeof result === "object" && result.exit)) break;
+      if (!result || result === "exit" || (typeof result === "object" && result.exit)) {
+        this.#game.view.exit();
+        break;
+      };
     }
     return true;
   }
