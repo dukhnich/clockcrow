@@ -16,8 +16,6 @@
       "npcIds": ["foreman", "builder", "apprentice"],
       "eventIds": ["miniContest", "builderJoke"],
       "optionIds": [
-        "helpBuilders",
-        "hearBuildersJoke",
         "go"
       ],
       "path": [
@@ -44,8 +42,6 @@
       "npcIds": ["philosopher", "student_1", "student_2", "oracle"],
       "eventIds": ["philosophicalDebate", "moralChoice"],
       "optionIds": [
-        "joinDebate",
-        "resolveDilemma",
         "becomeMentor",
         "go"
       ],

@@ -23,6 +23,7 @@
       "to": 21
     },
     "role": "builder",
+    "requirements": ["time:window:day"],
     "options": [
       "helpBuilders",
       "hearBuildersJoke"
@@ -51,7 +52,7 @@
       "from": 21,
       "to": 6
     },
-    "role": "філософ",
+    "requirements": ["time:window:night"],
     "options": [
       "joinDebate",
       "resolveDilemma"
