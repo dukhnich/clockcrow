@@ -3,17 +3,22 @@ const { Expression, Interpreter } = require("./baseInterpreter.js");
 class GoExpression extends Expression {
   constructor({ locationId = null, sceneId = null }) {
     super();
-    this.locationId = locationId ? String(locationId) : null;
-    this.sceneId = sceneId ? String(sceneId) : null;
+    this.locationId = locationId;
+    this.sceneId = sceneId;
   }
 
   async interpret(ctx) {
-    if (!ctx?.events || !this.locationId) return null;
-    const payload = this.sceneId
-      ? { locationId: this.locationId, sceneId: this.sceneId }
-      : { locationId: this.locationId };
-    ctx.events.emit("go", payload);
-    return payload;
+    if (this.locationId && this.sceneId) {
+      const payload = { locationId: this.locationId, sceneId: this.sceneId };
+      ctx?.events?.emit?.("go", payload);
+      return payload;
+    }
+    if (this.sceneId) {
+      const payload = { sceneId: this.sceneId };
+      ctx?.events?.emit?.("go", payload);
+      return payload;
+    }
+    return null;
   }
 }
 
@@ -35,8 +40,8 @@ class ChangeTraitExpression extends Expression {
 class DomainEventExpression extends Expression {
   constructor({ token, args = [] }) {
     super();
-    this.token = String(token || "");
-    this.args = Array.isArray(args) ? args : [args];
+    this.token = token;
+    this.args = Array.isArray(args) ? args : [];
   }
 
   async interpret(ctx) {
@@ -51,7 +56,7 @@ class DomainEventExpression extends Expression {
 class SequenceExpression extends Expression {
   constructor(children = []) {
     super();
-    this.children = Array.isArray(children) ? children : [];
+    this.children = children;
   }
 
   async interpret(ctx) {
@@ -65,90 +70,37 @@ class SequenceExpression extends Expression {
   }
 }
 
-class TimeExpression extends Expression {
-  constructor(time) {
-    super();
-    this.time = Number(time) || 0;
-  }
-
-  async interpret(ctx) {
-    if (!ctx?.events) return null;
-    if (this.time > 0) ctx.events.emit("effect", { time: this.time });
-    return this.time;
-  }
-}
-
 class EffectFactory {
   static from(def) {
     if (def == null) return new SequenceExpression([]);
 
     if (Array.isArray(def)) {
-      const parts = [];
-      for (const d of def) {
-        const expr = this.from(d);
-        if (expr instanceof SequenceExpression) parts.push(...expr.children);
-        else if (expr) parts.push(expr);
-      }
-      return new SequenceExpression(parts);
+      return new SequenceExpression(def.map((d) => EffectFactory.from(d)));
     }
 
     if (typeof def === "string") {
-      const token = String(def).trim();
-      if (token.startsWith("go:")) {
-        const [, rest] = token.split("go:");
-        const [locationId, sceneId] = String(rest || "").split(":");
-        return new GoExpression({ locationId, sceneId });
-      }
-      if (token.startsWith("time:")) {
-        const n = Number(token.slice(5));
-        return new TimeExpression(Number.isFinite(n) ? n : 0);
-      }
-      return new DomainEventExpression({ token });
-    }
-
-    if (typeof def === "object") {
-      // Nested list of effects
-      if (def.effects != null || def.effect != null) {
-        const payload = def.effects != null ? def.effects : def.effect;
-        return this.from(payload);
-      }
-      // go in object form
-      if (def.go != null) {
-        const go = def.go;
-        if (typeof go === "string") {
-          const [locationId, sceneId] = go.split(":");
-          return new GoExpression({ locationId, sceneId });
+      const [head, ...rest] = String(def).split(":");
+      switch (head) {
+        case "go": {
+          if (rest.length === 1) {
+            return new GoExpression({ sceneId: rest[0] });
+          }
+          if (rest.length >= 2) {
+            return new GoExpression({ locationId: rest[0], sceneId: rest[1] });
+          }
+          return new SequenceExpression([]);
         }
-        if (typeof go === "object") {
-          const locationId = go.locationId || go.location || "";
-          const sceneId = go.sceneId || undefined;
-          return new GoExpression({ locationId, sceneId });
+        case "changeTrait": {
+          const [name, delta] = rest;
+          return new ChangeTraitExpression({ name, delta });
         }
-      }
-      // { locationId, sceneId } object shorthand
-      if (def.locationId || def.location) {
-        const locationId = def.locationId || def.location || "";
-        const sceneId = def.sceneId || undefined;
-        return new GoExpression({ locationId, sceneId });
-      }
-      // Fallback: treat as a domain event token if present
-      if (def.token) {
-        return new DomainEventExpression({ token: def.token, args: def.args || [] });
+        default:
+          return new DomainEventExpression({ token: head, args: rest });
       }
     }
 
     // Future: object notation
     return new SequenceExpression([]);
-  }
-  static hasExplicitTime(def) {
-    if (def == null) return false;
-    if (typeof def === "number") return true;
-    if (typeof def === "object") {
-      if (Object.prototype.hasOwnProperty.call(def, "time")) return true;
-      const list = def.effects || def.sequence || def.traits;
-      if (Array.isArray(list)) return list.some(EffectFactory.hasExplicitTime);
-    }
-    return false;
   }
 }
 
@@ -161,19 +113,21 @@ class EffectInterpreter extends Interpreter {
     this.eventLog = eventLog;
   }
 
-  async interpret(def, opts = {}) {
-    const parts = [];
-    const timeCost = Number(opts?.timeCost);
-    if (Number.isFinite(timeCost) && timeCost > 0) {
-      parts.push(new TimeExpression(timeCost));
+  async interpret(effectDef, { timeCost } = {}) {
+    const expr = EffectFactory.from(effectDef);
+    const ctx = {
+      events: this.events,
+      traits: this.traits,
+      time: this.time,
+      eventLog: this.eventLog,
+    };
+    const result = await expr.interpret(ctx);
+
+    const t = Number(timeCost);
+    if (Number.isFinite(t) && t > 0 && this.events) {
+      this.events.emit("effect", { time: t });
     }
-
-    const body = EffectFactory.from(def);
-    if (body instanceof SequenceExpression) parts.push(...body.children);
-    else if (body) parts.push(body);
-
-    const seq = new SequenceExpression(parts);
-    return await seq.interpret(this);
+    return result;
   }
 }
 

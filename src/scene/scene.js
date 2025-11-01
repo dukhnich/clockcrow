@@ -91,34 +91,14 @@ class SceneAssembler {
     const talkChoices = this.#talkChoices(scene, ctx);
     const sceneChoices = this.#sceneOptions(scene, ctx);
     const npcChoices = ctx.currentNpcId ? this.#npcOptions(scene, ctx.currentNpcId, ctx) : [];
+    const goChoices = this.#locationChoices(scene);
 
     return this.#mergeUniqueById([
       ...talkChoices,   // { id, name }
       ...npcChoices,    // { id, name, meta }
       ...sceneChoices,  // { id, name, meta }
+      ...goChoices      // { id, name }
     ]);
-  }
-
-  buildPathChoices(scene, ctx = {}, baseGoOpt = null) {
-    const ids = Array.isArray(scene.path) ? scene.path : [];
-    const result = [];
-
-    for (const locId of ids) {
-      const id = String(locId);
-      if (!this.locationStore.has(id)) continue; // cache guarantees this for current scene
-
-      const dto = this.locationStore.getDTO(id);
-      result.push({
-        id: `go:${id}`,
-        name: dto.name || id,
-        meta: {
-          id: `go:${id}`,
-          text: dto.name || id,
-          time: (baseGoOpt && Number.isFinite(Number(baseGoOpt.time))) ? Number(baseGoOpt.time) : undefined
-        }
-      });
-    }
-    return this.#mergeUniqueById(result);
   }
 
   toViewDTO(scene, ctx = {}) {
@@ -254,40 +234,6 @@ class SceneController {
         ctx.currentNpcId = picked.split(":")[1];
         continue;
       }
-
-      if (picked === "go") {
-        const baseGoChoice = choices.find(c => c.id === "go");
-        const baseOpt = baseGoChoice && baseGoChoice.meta ? baseGoChoice.meta : null;
-
-        const pathChoices = this.assembler.buildPathChoices(scene, ctx, baseOpt);
-        if (!pathChoices.length) {
-          await this.view.showMessage("No available paths.");
-          continue;
-        }
-
-        const selected = await this.view.showPath(pathChoices, { includeBack: true });
-        if (!selected || selected === "back") continue;
-
-        const chosen = pathChoices.find(c => c.id === selected) || null;
-        const meta = chosen && chosen.meta ? chosen.meta : null;
-
-        if (meta && meta.result) await this.view.showChoiceResult(meta);
-
-        const effectDef = meta && (meta.effect != null ? meta.effect : meta.effects);
-        const locId = selected.split(":")[1];
-        const timeCost = Number.isFinite(Number(meta?.time))
-          ? Number(meta.time)
-          : (Number.isFinite(Number(baseOpt?.time)) ? Number(baseOpt.time) : undefined);
-
-        if (meta && (meta.effect != null || meta.effects != null)) {
-          const effectDef = meta.effect != null ? meta.effect : meta.effects;
-          await this.effects?.interpret(effectDef, { timeCost });
-        } else {
-          await this.effects?.interpret(`go:${locId}`, { timeCost });
-        }
-        return null;
-      }
-
       const choice = choices.find(c => c.id === picked);
       const opt = choice && choice.meta ? choice.meta : null;
       if (opt) {

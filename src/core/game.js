@@ -98,7 +98,6 @@ class Game {
     // Navigation
     this.#events.on("go", (payload) => {
       this.#movement.go(payload);
-      this.runStep();
     });
 
     // Advance time if the effect payload carries a time cost
