@@ -18,6 +18,9 @@ class Scene {
     return this.#locationId;
   }
   get info() { return this.#info; }
+  get npcIds() {
+    return Array.isArray(this.info.npcIds) ? this.info.npcIds.slice() : [];
+  }
 
   get description() {
     const d = this.info.description;
@@ -90,7 +93,11 @@ class SceneAssembler {
   buildChoices(scene, ctx = {}) {
     const talkChoices = this.#talkChoices(scene, ctx);
     const sceneChoices = this.#sceneOptions(scene, ctx);
-    const npcChoices = ctx.currentNpcId ? this.#npcOptions(scene, ctx.currentNpcId, ctx) : [];
+    const allowed = scene.npcIds || [];
+    const chosenNpcId = (ctx.currentNpcId && (!allowed.length || allowed.includes(String(ctx.currentNpcId))))
+      ? ctx.currentNpcId
+      : null;
+    const npcChoices = chosenNpcId ? this.#npcOptions(scene, chosenNpcId, ctx) : [];
 
     return this.#mergeUniqueById([
       ...talkChoices,   // { id, name }
@@ -122,7 +129,11 @@ class SceneAssembler {
   toViewDTO(scene, ctx = {}) {
     const location = this.locationStore.getDTO(scene.locationId);
 
-    const currentNpcId = ctx.currentNpcId || null;
+    const allowed = scene.npcIds || [];
+    const currentNpcId = (ctx.currentNpcId && (!allowed.length || allowed.includes(String(ctx.currentNpcId))))
+      ? ctx.currentNpcId
+      : null;
+
     const currentNpc = currentNpcId
       ? this.#npcToView(scene.locationId, currentNpcId)
       : null;
@@ -177,7 +188,7 @@ class SceneAssembler {
     const result = [];
     listIds.forEach(id => {
       const npc = this.npcStore.get(scene.locationId, id);
-      if (Boolean(this.#req.passes(npc.requirements, env)) && !result.includes(npc)) {
+      if (npc && Boolean(this.#req.passes(npc.requirements, env)) && !result.includes(npc)) {
         result.push(npc);
       }
     });
@@ -185,8 +196,8 @@ class SceneAssembler {
   }
 
   #talkChoices(scene, ctx) {
-    const list = this.npcStore.list(scene.locationId);
-    const npcs = this.#filterNpcs(scene, ctx, list.map(n => n.id));
+    const ids = scene.npcIds || [];
+    const npcs = this.#filterNpcs(scene, ctx, ids);
     const current = ctx.currentNpcId ? String(ctx.currentNpcId) : null;
     return npcs.map(n => ({
       id: `talk:${n.id}`,
