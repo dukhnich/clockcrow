@@ -57,8 +57,7 @@
     {
       "id": "TH02",
       "locationId": "townhall",
-      "from": 5,
-      "to": 6,
+      "window": "any",
       "requirements": ["effect:gameOver"],
       "description": [
         "Башта ожила: шестерні зоряного колеса вперше загуркотіли, і мідний дзвін полився понад дахи.",
@@ -69,7 +68,8 @@
       ],
       "optionIds": [
         "hearResult",
-        "newGame"
+        "newGame",
+        "exit"
       ]
     }
   ]

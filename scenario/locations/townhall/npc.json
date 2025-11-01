@@ -50,7 +50,7 @@
     "location": "magistrate",
     "schedule": {
       "from": 21,
-      "to": 6
+      "to": 5
     },
     "requirements": ["time:window:night"],
     "options": [
