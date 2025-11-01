@@ -113,12 +113,48 @@ class Game {
       if (t > 0) this.#timeManager.tick(t);
     });
 
+    this.#events.on("hearResult", () => {
+      const base = this.#traitsManager.computeTraitsResult();
+      const catalog = this.#sceneCache.getResultsCatalog();
+      const enriched = this.#enrichTraitsResult(base, catalog);
+      this.#view.showTraitsResult(enriched);
+      this.#view.exit();
+    });
+
     // Optional: end-of-day handling (if TimeManager reports gameOver)
     this.#timeManager.subscribe((e) => {
       if (e && e.gameOver) {
         this.#onGameOver();
       }
     });
+  }
+  #enrichTraitsResult(res, cat) {
+    const result = { ...res };
+    const sides = (cat && cat.sides) || {};
+    const traits = (cat && cat.traits) || {};
+    const defaults = (cat && cat.defaults) || {};
+
+    const sideMeta = sides[result.dominantSide] || null;
+    const traitId = result.selectedTrait || null;
+    const traitMeta = traitId ? (traits[traitId] || null) : null;
+
+    result.meta = {
+      side: sideMeta ? {
+        id: result.dominantSide,
+        name: sideMeta.name || result.dominantSide,
+        description: sideMeta.description || [],
+        epilogue: sideMeta.epilogue || []
+      } : null,
+      trait: traitMeta ? {
+        id: traitMeta.id || traitId,
+        name: traitMeta.name || traitId,
+        description: traitMeta.description || [],
+        epilogue: traitMeta.epilogue || [],
+        character: traitMeta.character || null
+      } : null,
+      defaults: defaults || {}
+    };
+    return result;
   }
   #onGameOver() {
     if (this.#gameOverHandled) return;
