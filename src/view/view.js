@@ -32,6 +32,8 @@ class IGameView {
     showChoiceResult(optionDto) {
       throw new Error("Method 'showChoiceResult()' must be implemented.");
     }
+  async showPath(paths, opts = {}) { throw new Error("Method 'showPath()' must be implemented."); }
+
   showTraitsResult(result) {
     throw new Error("Method 'showTraitsResult()' must be implemented.");
   }
@@ -147,10 +149,15 @@ class CLIInquirerView extends IGameView {
       console.log(window === 'day' ? day(text) : night(text));
     }
 
-  // scene: {
-  //   location: { id, name, background? /* string path | string[] lines */ },
-  //   from?, to?, description: string|string[], options: ({id,name}|string)[], currentNpc?: { id, name, text }
-  // }
+  async showPath(paths, opts = {}) {
+    const includeBack = opts.includeBack !== false;
+    const list = Array.isArray(paths) ? paths.slice() : [];
+    const choices = list.map(p => ({ name: p.name || p.id, value: p.id }));
+    if (includeBack) choices.push({ name: 'Back', value: 'back' });
+    const picked = await this.promptChoice('Choose destination:', choices, { inline: false });
+    return picked;
+  }
+
   async showScene(scene) {
     // data-first DTO
     const dto = scene && typeof scene === "object" ? scene : null;

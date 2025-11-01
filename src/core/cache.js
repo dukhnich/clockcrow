@@ -17,7 +17,7 @@ class SceneCache {
 
   #baseDir;
   #ptr;        // { locationId, sceneId }
-  #history;    // [{ locationId, sceneId }]
+  #history;
 
   constructor(opts = {}) {
     this.#baseDir = opts.baseDir || path.join(process.cwd(), "scenario", "locations");
@@ -38,7 +38,6 @@ class SceneCache {
     }
   }
 
-  // Ensure location is registered and return its info.json content
   #ensureLocation(locationId) {
     const infoPath = path.join(this.#baseDir, locationId, "info.json");
     const info = this.#jsonPool.readJson(infoPath, {});
@@ -47,6 +46,26 @@ class SceneCache {
       background: info.background
     });
     return info;
+  }
+  #ensurePathsForLocation(locationId, sceneId) {
+    const info = this.#ensureLocation(locationId);
+    const scenes = Array.isArray(info.scenes) ? info.scenes : [];
+    if (!scenes.length) return;
+
+    let targets = [];
+    if (sceneId) {
+      const s = scenes.find(sc => sc && sc.id === sceneId);
+      if (s) targets = [s];
+    } else {
+      targets = scenes;
+    }
+
+    for (const s of targets) {
+      const pathIds = Array.isArray(s.path) ? s.path : [];
+      for (const locId of pathIds) {
+        this.#ensureLocation(locId);
+      }
+    }
   }
 
   #isSceneAllowedNow(sceneObj) {
@@ -88,26 +107,17 @@ class SceneCache {
   }
 
   setCurrent(locationId, sceneId) {
-    const info = this.#ensureLocation(locationId);
-    const exists = Array.isArray(info.scenes) && info.scenes.some(s => s && s.id === sceneId);
-    let resolvedSceneId = exists
-      ? sceneId
-      : (info.startSceneId
-        || (Array.isArray(info.scenes) && info.scenes[0] && info.scenes[0].id)
-        || sceneId);
+    if (!locationId) return;
 
-    if (Array.isArray(info.scenes) && this.#timeManager) {
-      const picked = info.scenes.find(s => s && s.id === resolvedSceneId) || null;
-      if (!this.#isSceneAllowedNow(picked)) {
-        const alt = info.scenes.find(s => this.#isSceneAllowedNow(s));
-        if (alt && alt.id) {
-          resolvedSceneId = alt.id;
-        }
-      }
+    // register current location and preload its path destinations
+    this.#ensureLocation(locationId);
+    this.#ensurePathsForLocation(locationId, sceneId);
+
+    const prev = this.#ptr;
+    this.#ptr = { locationId: String(locationId), sceneId: sceneId ? String(sceneId) : undefined };
+    if (!prev || prev.locationId !== this.#ptr.locationId || prev.sceneId !== this.#ptr.sceneId) {
+      this.#history.push({ locationId: this.#ptr.locationId, sceneId: this.#ptr.sceneId });
     }
-
-    this.#ptr = { locationId, sceneId: resolvedSceneId };
-    this.#history.push({ ...this.#ptr });
     return this.#ptr;
   }
 
@@ -117,46 +127,55 @@ class SceneCache {
   currentScene() {
     if (!this.#ptr) return null;
     const { locationId } = this.#ptr;
-    let { sceneId } = this.#ptr;
-    const info = this.#ensureLocation(locationId);
-    if (Array.isArray(info.scenes) && this.#timeManager) {
-      const picked = info.scenes.find(s => s && s.id === sceneId) || null;
-      if (!this.#isSceneAllowedNow(picked)) {
-        const alt = info.scenes.find(s => this.#isSceneAllowedNow(s));
-        if (alt && alt.id) {
-          // Update pointer silently (no history push)
-          this.#ptr = { locationId, sceneId: alt.id };
-          sceneId = alt.id;
-        }
-      }
-    }
-    const sceneObj = (Array.isArray(info.scenes)
-      ? info.scenes.find(s => s && s.id === sceneId)
-      : null) || {};
+    const infoPath = path.join(this.#baseDir, locationId, "info.json");
+    const info = this.#jsonPool.readJson(infoPath, {});
 
-    return new Scene(sceneId, locationId, {
-      description: Array.isArray(sceneObj.description) ? sceneObj.description : (sceneObj.description || ""),
-      optionIds: Array.isArray(sceneObj.optionIds) ? sceneObj.optionIds : [],
-      path: Array.isArray(sceneObj.path) ? sceneObj.path : (Array.isArray(info.path) ? info.path : [])
+    // Pick scene by explicit id or by current time window.
+    const sceneId = this.#ptr.sceneId;
+    const sceneObj = (Array.isArray(info.scenes)
+      ? (sceneId
+        ? info.scenes.find(s => s && s.id === sceneId)
+        : info.scenes.find(s => this.#isSceneAllowedNow(s)))
+      : null) || null;
+
+    // Preload path destinations for the resolved scene
+    if (sceneObj) this.#ensurePathsForLocation(locationId, sceneObj.id);
+
+    const resolvedSceneId = (sceneObj && sceneObj.id)
+      || info.startSceneId
+      || (Array.isArray(info.scenes) && info.scenes[0] && info.scenes[0].id)
+      || "start";
+
+    return new Scene(resolvedSceneId, locationId, {
+      description: (sceneObj && sceneObj.description) || info.description || "",
+      options: (sceneObj && sceneObj.options) || [],
+      optionIds: (sceneObj && sceneObj.optionIds) || [],
+      npc: (sceneObj && sceneObj.npc) || [],
+      path: (sceneObj && sceneObj.path) || [],
+      currentNpc: (sceneObj && sceneObj.currentNpc) || null
     });
   }
 
   applyResult(result) {
     if (!this.#ptr) return this.#ptr;
     if (result == null) return this.#ptr;
-    console.log("SceneCache.applyResult:", result);
+
+    if (typeof result === "string") {
+      if (result.startsWith("go:")) {
+        const nextLocationId = result.slice(3);
+        if (nextLocationId) this.setCurrent(nextLocationId, undefined);
+      }
+      return this.#ptr;
+    }
 
     if (typeof result === "object") {
-      const nextSceneId = result.go || result.nextSceneId || result.sceneId || null;
-      const nextLocationId = result.locationId || this.#ptr.locationId;
-
-      if (nextSceneId) {
-        this.setCurrent(nextLocationId, nextSceneId);
-      } else if (result.locationId && result.locationId !== this.#ptr.locationId) {
-        // Jump to location's default start scene
-        this.setCurrent(result.locationId, undefined);
-      }
+      const go = result.go && typeof result.go === "object" ? result.go : null;
+      const loc = String(result.locationId || result.location || (go && (go.locationId || go.location)) || "");
+      const scn = result.sceneId || (go && go.sceneId) || undefined;
+      if (loc) this.setCurrent(loc, scn ? String(scn) : undefined);
+      return this.#ptr;
     }
+
     return this.#ptr;
   }
 

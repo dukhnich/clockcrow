@@ -72,6 +72,10 @@ class LocationFlyweightStore {
     return fw;
   }
 
+  has(locationId) {
+    return this.#map.has(String(locationId));
+  }
+
   getDTO(locationId) {
     const fw = this.#map.get(locationId);
     if (!fw) throw new Error(`Location flyweight missing for ${locationId}`);
