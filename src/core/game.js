@@ -34,6 +34,8 @@ class Game {
   #movement;
   #events;
   #sceneController;
+  #finalPtr;
+  #gameOverHandled = false;
   constructor(opts = {}) {
     this.#state = opts.state || new InitialState();
     this.#view = opts.view || new CLIInquirerView();
@@ -63,6 +65,11 @@ class Game {
     this.#movement = new MovementManager({ cache: this.#sceneCache });
     this.#events = new EventsManager();
     this.#eventLog = new EventLog();
+
+    this.#finalPtr = (opts.final && typeof opts.final === "object")
+      ? { locationId: opts.final.locationId, sceneId: opts.final.sceneId }
+      : { locationId: "townhall", sceneId: "TH02" };
+
     const req = new RequirementInterpreter({
       timeManager: this.#timeManager,
       eventLog: this.#eventLog,
@@ -109,11 +116,23 @@ class Game {
     // Optional: end-of-day handling (if TimeManager reports gameOver)
     this.#timeManager.subscribe((e) => {
       if (e && e.gameOver) {
-        const result = this.#traitsManager.computeTraitsResult();
-        this.#view.showTraitsResult(result);
-        this.#view.finishGame();
+        this.#onGameOver();
       }
     });
+  }
+  #onGameOver() {
+    if (this.#gameOverHandled) return;
+    this.#gameOverHandled = true;
+
+    // Mark in domain log and notify listeners
+    this.#eventLog.add("gameOver");
+    // Optional domain hooks similar to EffectInterpreter
+    this.#events.emit("effect:gameOver", { token: "gameOver" });
+    this.#events.emit("gameOver", { time: this.#timeManager.currentTime });
+
+    // Navigate to final scene
+    const fin = this.#finalPtr;
+    this.#events.emit("go", fin);
   }
   #addTraitsItemListeners() {
       this.#inventory.subscribe((event) => {

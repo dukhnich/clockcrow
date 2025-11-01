@@ -161,7 +161,8 @@ class SceneCache {
     return new Scene(sceneId, locationId, {
       description: Array.isArray(sceneObj.description) ? sceneObj.description : (sceneObj.description || ""),
       optionIds: Array.isArray(sceneObj.optionIds) ? sceneObj.optionIds : [],
-      path: Array.isArray(sceneObj.path) ? sceneObj.path : (Array.isArray(info.path) ? info.path : [])
+      path: Array.isArray(sceneObj.path) ? sceneObj.path : (Array.isArray(info.path) ? info.path : []),
+      npcIds: Array.isArray(sceneObj.npcIds) ? sceneObj.npcIds : []
     });
   }
 
