@@ -35,7 +35,8 @@
     "time": 1
   },
   "hearResult": {
-    "text": "Роздивитись свою статую"
+    "text": "Роздивитись свою статую",
+    "effect": ["hearResult"]
   },
   "newGame": {
     "text": "Почати заново"
