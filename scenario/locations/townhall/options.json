@@ -31,7 +31,6 @@
   },
   "go": {
     "text": "Вийти з магістрату на міську площу чи шукати іншу стежку",
-    "effect": "goToLocation",
     "requirements": [],
     "time": 1
   }

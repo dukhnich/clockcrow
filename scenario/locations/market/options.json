@@ -30,7 +30,6 @@
 
   "go": {
     "text": "Посунутися з ярмарку новою стежкою.",
-    "effect": "goToLocation",
     "requirements": [],
     "time": 1
   }
