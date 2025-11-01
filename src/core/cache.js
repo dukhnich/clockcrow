@@ -41,12 +41,34 @@ class SceneCache {
   // Ensure location is registered and return its info.json content
   #ensureLocation(locationId) {
     const infoPath = path.join(this.#baseDir, locationId, "info.json");
-    const info = this.#jsonPool.readJson(infoPath, {});
+    const info = this.#jsonPool.readJson(infoPath);
+    if (!info || typeof info !== "object") {
+      return {}
+    }
     this.#locationStore.ensure(locationId, {
       title: info.name || info.title || locationId,
       background: info.background
     });
     return info;
+  }
+
+  #ensurePathsForLocation(locationId, sceneId) {
+    const info = this.#ensureLocation(locationId);
+    const scenes = Array.isArray(info.scenes) ? info.scenes : [];
+    if (!scenes.length) return;
+    let targets = [];
+    if (sceneId) {
+      const s = scenes.find(sc => sc && sc.id === sceneId);
+      if (s) targets = [s];
+    } else {
+      targets = scenes;
+    }
+    for (const s of targets) {
+      const pathIds = Array.isArray(s.path) ? s.path : [];
+      for (const locId of pathIds) {
+        this.#ensureLocation(locId);
+      }
+    }
   }
 
   #isSceneAllowedNow(sceneObj) {
@@ -88,7 +110,9 @@ class SceneCache {
   }
 
   setCurrent(locationId, sceneId) {
+    if (!locationId) return;
     const info = this.#ensureLocation(locationId);
+    this.#ensurePathsForLocation(locationId, sceneId);
     const exists = Array.isArray(info.scenes) && info.scenes.some(s => s && s.id === sceneId);
     let resolvedSceneId = exists
       ? sceneId

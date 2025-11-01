@@ -71,6 +71,9 @@ class LocationFlyweightStore {
     this.#map.set(locationId, fw);
     return fw;
   }
+  has(locationId) {
+    return this.#map.has(String(locationId));
+  }
 
   getDTO(locationId) {
     const fw = this.#map.get(locationId);

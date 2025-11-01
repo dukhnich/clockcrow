@@ -8,17 +8,12 @@ class GoExpression extends Expression {
   }
 
   async interpret(ctx) {
-    if (this.locationId && this.sceneId) {
-      const payload = { locationId: this.locationId, sceneId: this.sceneId };
-      ctx?.events?.emit?.("go", payload);
-      return payload;
-    }
-    if (this.sceneId) {
-      const payload = { sceneId: this.sceneId };
-      ctx?.events?.emit?.("go", payload);
-      return payload;
-    }
-    return null;
+    if (!ctx?.events || !this.locationId) return null;
+    const payload = this.sceneId
+      ? { locationId: this.locationId, sceneId: this.sceneId }
+      : { locationId: this.locationId };
+    ctx.events.emit("go", payload);
+    return payload;
   }
 }
 
@@ -98,8 +93,34 @@ class EffectFactory {
           return new DomainEventExpression({ token: head, args: rest });
       }
     }
+    if (typeof def === "object") {
+      if (def.effects != null || def.effect != null) {
+        const payload = def.effects != null ? def.effects : def.effect;
+        return this.from(payload);
+      }
+      if (def.go != null) {
+        const go = def.go;
+        if (typeof go === "string") {
+          const [locationId, sceneId] = go.split(":");
+          return new GoExpression({ locationId, sceneId });
 
-    // Future: object notation
+        }
+        if (typeof go === "object") {
+          const locationId = go.locationId || go.location || "";
+          const sceneId = go.sceneId || undefined;
+          return new GoExpression({ locationId, sceneId });
+        }
+      }
+      if (def.locationId || def.location) {
+        const locationId = def.locationId || def.location || "";
+        const sceneId = def.sceneId || undefined;
+        return new GoExpression({ locationId, sceneId });
+      }
+      if (def.token) {
+        return new DomainEventExpression({ token: def.token, args: def.args || [] });
+      }
+    }
+
     return new SequenceExpression([]);
   }
 }
