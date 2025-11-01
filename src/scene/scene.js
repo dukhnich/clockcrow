@@ -304,9 +304,6 @@ class SceneController {
       if (opt) {
         if (opt.result) await this.view.showChoiceResult(opt);
 
-        // Run effects via EffectInterpreter; it will:
-        // - emit 'go' for navigation
-        // - emit 'effect' { time } for time cost
         const effectDef = opt.effect != null ? opt.effect : opt.effects;
         const res = await this.effects?.interpret(effectDef, { timeCost: opt.time });
         if (res != null) return res;

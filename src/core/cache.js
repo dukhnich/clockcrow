@@ -14,6 +14,7 @@ class SceneCache {
   #locationStore;
   #assembler;
   #timeManager;
+  #resultsCatalog;
 
   #baseDir;
   #ptr;        // { locationId, sceneId }
@@ -31,6 +32,7 @@ class SceneCache {
       npcStore: this.#npcStore,
       locationStore: this.#locationStore
     });
+    this.#resultsCatalog = opts.resultsCatalog || null;
 
     this.#history = [];
     if (opts.start?.locationId) {
@@ -38,7 +40,17 @@ class SceneCache {
     }
   }
 
-  // Ensure location is registered and return its info.json content
+  getResultsCatalog() {
+    if (this.#resultsCatalog) return this.#resultsCatalog;
+    const file = path.join(process.cwd(), "scenario", "results", "traits.json");
+    try {
+      const data = this.#jsonPool.readJson(file);
+      this.#resultsCatalog = (data && typeof data === "object") ? data : { version: 1 };
+    } catch {
+      this.#resultsCatalog = { version: 1 };
+    }
+    return this.#resultsCatalog;
+  }
   #ensureLocation(locationId) {
     const infoPath = path.join(this.#baseDir, locationId, "info.json");
     const info = this.#jsonPool.readJson(infoPath);

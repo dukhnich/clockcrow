@@ -266,21 +266,85 @@ class CLIInquirerView extends IGameView {
     const key = chalkPipe('cyan');
     const val = chalkPipe('white.bold');
 
-    const totals = (result && result.totals) || {};
-    const topTraits = (result && result.topTraits) || [];
-    const selected = result && result.selectedTrait || null;
-    const topValue = (result && Number.isFinite(result.topValue)) ? result.topValue : 0;
+    console.log(title("=== *** ==="));
 
-    console.log(title("=== Game results ==="));
-    Object.keys(totals).forEach((side) => {
-      console.log(`${key(`Total ${side}`)}: ${val(String(totals[side]))}`);
-    });
-
-    if (topTraits.length > 1) {
-      console.log(`${key('Top trait value')}: ${val(String(topValue))}`);
-      console.log(`${key('Top traits')}: ${val(topTraits.join(', '))}`);
+    if (!result || typeof result !== "object") {
+      console.log("No data.");
+      console.log("");
+      return;
     }
-    if (selected) console.log(`${key('Result trait')}: ${val(selected)}`);
+
+    const topTraits = Array.isArray(result.topTraits) ? result.topTraits : [];
+
+    const meta = (result && result.meta) || {};
+    const side = meta.side || null;
+    const trait = meta.trait || null;
+    const defaults = meta.defaults || {};
+    const isTie = topTraits.length > 1;
+
+    const body = [];
+
+    if (isTie && defaults.tie) {
+      if (defaults.tie.title) body.push(val(defaults.tie.title));
+      const desc = Array.isArray(defaults.tie.description)
+        ? defaults.tie.description : (defaults.tie.description ? [defaults.tie.description] : []);
+      body.push(...desc);
+    } else {
+
+      if (trait) {
+        const ch = trait.character || null;
+        if (ch) {
+          body.push('');
+          if (ch.name) body.push(`${key('Фігура:')} ${val(ch.name)}`);
+          if (ch.description) body.push(String(ch.description));
+        }
+        body.push('');
+
+        body.push(`${key('Головна риса:')} ${val(trait.name || trait.id)}`);
+        const tdesc = Array.isArray(trait.description)
+          ? trait.description : (trait.description ? [trait.description] : []);
+        body.push(...tdesc);
+        body.push('');
+      } else if (defaults.unknownTrait) {
+        const udesc = Array.isArray(defaults.unknownTrait.description)
+          ? defaults.unknownTrait.description
+          : (defaults.unknownTrait.description ? [defaults.unknownTrait.description] : []);
+        body.push(...udesc);
+      }
+
+      if (side) {
+        body.push(`${key('Вам до душі')} ${val(side.name || side.id)}`);
+        const sdesc = Array.isArray(side.description)
+          ? side.description : (side.description ? [side.description] : []);
+        body.push(...sdesc);
+        body.push('');
+      }
+
+      const epilogue = [];
+      if (side && side.epilogue) {
+        epilogue.push(...(Array.isArray(side.epilogue) ? side.epilogue : [side.epilogue]));
+      }
+      if (trait && trait.epilogue) {
+        epilogue.push(...(Array.isArray(trait.epilogue) ? trait.epilogue : [trait.epilogue]));
+      }
+      if (epilogue.length) {
+        body.push(key('Витяг з літопису:'));
+        body.push(...epilogue);
+      }
+    }
+
+    // Optional avatar column
+    let avatarLines = [];
+    const avatarPath = trait && trait.character && trait.character.avatar ? String(trait.character.avatar) : null;
+    if (avatarPath) {
+      // avatarLines = this.#loadAscii(avatarPath);
+    }
+
+    if (avatarLines.length) {
+      this.#renderColumns(avatarLines, body, 2, "  ");
+    } else {
+      for (const l of body) console.log(l);
+    }
     console.log('');
   }
 
