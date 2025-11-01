@@ -39,7 +39,8 @@
     "effect": ["hearResult"]
   },
   "newGame": {
-    "text": "Почати заново"
+    "text": "Почати заново",
+    "effect": ["newGame"]
   },
   "exit": {
     "text": "Покинути місто"
