@@ -99,11 +99,17 @@ class SceneAssembler {
       : null;
     const npcChoices = chosenNpcId ? this.#npcOptions(scene, chosenNpcId, ctx) : [];
 
-    return this.#mergeUniqueById([
-      ...talkChoices,   // { id, name }
-      ...npcChoices,    // { id, name, meta }
-      ...sceneChoices,  // { id, name, meta }
+    const merged = this.#mergeUniqueById([
+      ...talkChoices,
+      ...npcChoices,
+      ...sceneChoices,
     ]);
+
+    if (!merged.some(c => c.id === "exit")) {
+      merged.push({ id: "exit", name: "Exit" });
+    }
+
+    return merged;
   }
 
   buildPathChoices(scene, ctx = {}, baseGoOpt = null) {
@@ -277,7 +283,6 @@ class SceneController {
         const chosen = pathChoices.find(c => c.id === selected) || null;
         const meta = chosen && chosen.meta ? chosen.meta : null;
         if (meta && meta.result) await this.view.showChoiceResult(meta);
-        const effectDef = meta && (meta.effect != null ? meta.effect : meta.effects);
         const locId = selected.split(":")[1];
         const timeCost = Number.isFinite(Number(meta?.time))
           ? Number(meta.time)

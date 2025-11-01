@@ -284,10 +284,14 @@ class CLIInquirerView extends IGameView {
     console.log('');
   }
 
-  // NEW: finish the game and exit
   finishGame() {
     const end = chalkPipe('red.bold');
     console.log(end('Game over.'));
+    this.exit();
+  }
+  exit() {
+    const end = chalkPipe('red.green');
+    console.log(end('EXIT'));
     process.exit(0);
   }
 
