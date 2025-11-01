@@ -22,6 +22,7 @@ const path = require("node:path");
 
 
 class Game {
+  #start
   #state;
   #view;
   #traitsManager;
@@ -120,8 +121,14 @@ class Game {
       this.#view.showTraitsResult(enriched);
       this.#view.exit();
     });
+    this.#events.on("newGame", () => {
+      this.#eventLog.clear();
+      this.#traitsManager.resetTraits();
+      this.#timeManager.reset();
+      this.#gameOverHandled = false;
+      this.#events.emit("go", {locationId: "start"});
+    });
 
-    // Optional: end-of-day handling (if TimeManager reports gameOver)
     this.#timeManager.subscribe((e) => {
       if (e && e.gameOver) {
         this.#onGameOver();
