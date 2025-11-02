@@ -35,7 +35,6 @@ class WorldState {
     this.#setCount(map, loc, id, cur + Number(delta));
   }
 
-  // Seed defaults from scene inventory; does not overwrite removals.
   // items: [{ id, quantity|qty|count }]
   applySceneInventory(locationId, items) {
     if (!locationId) return;
@@ -73,35 +72,80 @@ class WorldState {
   }
 
   hasLocationItem(locationId, itemId, qty = 1) {
-    console.log(this.#getCount(this.#added, locationId, itemId))
     if (!locationId || !itemId) return false;
-    const need = Number.isFinite(Number(qty)) ? Number(qty) : 1;
-    const total =
-      this.#getCount(this.#defaults, locationId, itemId) +
-      this.#getCount(this.#added, locationId, itemId) -
-      this.#getCount(this.#removed, locationId, itemId);
-    return total >= need;
+    const need = Number(qty);
+    const base = this.#getCount(this.#defaults, locationId, itemId);
+    const add = this.#getCount(this.#added, locationId, itemId);
+    const rem = this.#getCount(this.#removed, locationId, itemId);
+    const net = Math.max(0, base + add - rem);
+    return net >= (Number.isFinite(need) ? need : 1);
   }
 
   // Optional debug snapshot
   getLocationItemsSnapshot(locationId) {
+    const out = {};
     const loc = String(locationId);
-    const snap = {};
-    const merge = (map, key) => {
-      const m = map.get(loc);
-      if (!m) return;
-      for (const [id, v] of m.entries()) {
-        if (!snap[id]) snap[id] = { defaults: 0, added: 0, removed: 0, net: 0 };
-        snap[id][key] = v;
-      }
-    };
-    merge(this.#defaults, "defaults");
-    merge(this.#added, "added");
-    merge(this.#removed, "removed");
-    for (const [id, s] of Object.entries(snap)) {
-      s.net = Math.max(0, s.defaults + s.added - s.removed);
+
+    const allIds = new Set([
+      ...Object.keys(this.#toPlainLoc(this.#defaults, loc)),
+      ...Object.keys(this.#toPlainLoc(this.#added, loc)),
+      ...Object.keys(this.#toPlainLoc(this.#removed, loc))
+    ]);
+    for (const id of allIds) {
+      const base = this.#getCount(this.#defaults, loc, id);
+      const add = this.#getCount(this.#added, loc, id);
+      const rem = this.#getCount(this.#removed, loc, id);
+      const net = Math.max(0, base + add - rem);
+      if (net > 0) out[id] = net;
     }
-    return snap;
+    return out;
+  }
+  getSnapshot() {
+    return {
+      version: 1,
+      defaults: this.#toPlain(this.#defaults),
+      added: this.#toPlain(this.#added),
+      removed: this.#toPlain(this.#removed),
+    };
+  }
+
+  loadSnapshot(snap) {
+    if (!snap || typeof snap !== "object") return;
+    this.reset();
+    this.#defaults = this.#fromPlain(snap.defaults || {});
+    this.#added = this.#fromPlain(snap.added || {});
+    this.#removed = this.#fromPlain(snap.removed || {});
+  }
+
+  #toPlain(map) {
+    const out = {};
+    for (const [loc, m] of map.entries()) {
+      const inner = {};
+      for (const [id, cnt] of m.entries()) {
+        if (cnt > 0) inner[id] = cnt;
+      }
+      if (Object.keys(inner).length) out[loc] = inner;
+    }
+    return out;
+  }
+  #toPlainLoc(map, loc) {
+    const m = map.get(String(loc));
+    if (!m) return {};
+    const out = {};
+    for (const [id, cnt] of m.entries()) if (cnt > 0) out[id] = cnt;
+    return out;
+  }
+  #fromPlain(obj) {
+    const outer = new Map();
+    for (const [loc, inner] of Object.entries(obj || {})) {
+      const m = new Map();
+      for (const [id, cnt] of Object.entries(inner || {})) {
+        const n = Number(cnt);
+        if (Number.isFinite(n) && n > 0) m.set(String(id), n);
+      }
+      if (m.size) outer.set(String(loc), m);
+    }
+    return outer;
   }
 }
 
