@@ -304,10 +304,10 @@ class SceneController {
           : (Number.isFinite(Number(baseOpt?.time)) ? Number(baseOpt.time) : undefined);
         if (meta && (meta.effect != null || meta.effects != null)) {
           const effectDef = meta.effect != null ? meta.effect : meta.effects;
-          const res = await this.effects?.interpret(effectDef, { timeCost });
+          const res = await this.effects?.interpret(effectDef, { timeCost, kind: 'travel' });
           return res ?? null;
         } else {
-          const res = await this.effects?.interpret(`go:${locId}`, { timeCost });
+          const res = await this.effects?.interpret(`go:${locId}`, { timeCost, kind: 'travel' });
           // If interpreter returns nothing, still return a navigation payload
           return res ?? { locationId: locId };
         }

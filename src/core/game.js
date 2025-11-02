@@ -48,6 +48,7 @@ class Game {
     this.#timeManager = opts.timeManager || new TimeManager();
     this.#inventory = opts.inventory || new Inventory();
     this.#itemStore = new ItemStore();
+    this.#inventory.attachItemStore(this.#itemStore);
 
     const traitsStore = new TraitsStore();
     const traitModels = traitsStore.getAll();
@@ -74,7 +75,7 @@ class Game {
       start: this.#start
     });
 
-    this.#movement = new MovementManager({ cache: this.#sceneCache });
+    this.#movement = new MovementManager({ cache: this.#sceneCache, inventory: this.#inventory });
     this.#events = new EventsManager();
     this.#eventLog = new EventLog();
 
@@ -211,7 +212,10 @@ class Game {
 
     this.#events.on("effect", (eff) => {
       const t = Number(eff && eff.time);
-      if (t > 0) this.#timeManager.tick(t);
+      if (t > 0) {
+        const dt = this.#movement.computeTime(t, eff);
+        this.#timeManager.tick(dt);
+      }
     });
 
     this.#events.on("hearResult", () => {
@@ -248,7 +252,6 @@ class Game {
         const loc = this.currentLocationId;
         this.#world.removeLocationItem(loc, id);
       }
-      // ignore currentNpc removal for now
     });
   }
   #enrichTraitsResult(res, cat) {

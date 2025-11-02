@@ -20,10 +20,7 @@ class ItemStore {
   #normalize(id, raw) {
     const obj = (raw && typeof raw === "object") ? raw : {};
     const name = obj.name || obj.title || id;
-    const description = obj.description || obj.text || "";
-    const effect = obj.effect || [];
-    const effectText = obj.effectText || '';
-    return { id, name, description, effect, effectText };
+    return { ...raw, id, name };
   }
 
   has(id) {

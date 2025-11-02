@@ -169,12 +169,12 @@ class CLIInquirerView extends IGameView {
     }
 
     if (ids.length) {
-      console.log(key("Stackables:"));
+      console.log(key("Перелік:"));
       ids.forEach(id => console.log(`  ${id}: ${val(counts[id])}`));
       console.log("");
     }
     if (items.length) {
-      console.log(key("Речі:"));
+      console.log(key("Речі з історією:"));
       items.forEach(it => console.log(`  ${it.name}${it.description ? ` — ${it.description}` : ""}`));
       console.log("");
     }
