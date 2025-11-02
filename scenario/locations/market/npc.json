@@ -24,7 +24,7 @@
     ],
     "inventory": [
       {
-        "item_id": "cock",
+        "id": "cock",
         "price": 1,
         "quantity": 1
       }

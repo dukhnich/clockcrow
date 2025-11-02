@@ -15,14 +15,20 @@
 
   "stealHorse": {
     "text": "Спробувати викрасти коня прямо з-під носа недолугого недолікаря",
-    "effect": ["stealHorse", "changeTrait:greed:1", "changeTrait:mercy:-1"],
+    "effect": [
+      "stealHorse",
+      "changeTrait:greed:1",
+      "changeTrait:mercy:-1",
+      "add:player:horse",
+      "remove:location:horse"
+    ],
     "requirements": ["has:location:horse"],
     "time": 1
   },
 
   "buy:cock": {
     "text": "Купити півня за монету",
-    "effect": ["cockRunAway", "go:market:MT01"],
+    "effect": ["remove:currentNpc:cock","cockRunAway", "go:market:MT01", "remove:player:money:1"],
     "result": "Півень вислизнув з рук і втік геть!",
     "requirements": ["has:player:money:1"],
     "time": 0.1

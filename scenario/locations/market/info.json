@@ -16,7 +16,6 @@
       ],
       "npcIds": ["merchant"],
       "eventIds": ["cockEscape"],
-      "itemsIds": ["cock"],
       "optionIds": [
         "talk:merchant"
       ]
@@ -33,7 +32,12 @@
       ],
       "npcIds": ["oldLady", "showman", "charlatan"],
       "eventIds": ["rumorThread", "horseTheft", "horseTheftFailed"],
-      "itemsIds": ["horse"],
+      "inventory": [
+        {
+          "id": "horse",
+          "quantity": 1
+        }
+      ],
       "optionIds": [
         "hearRumors",
         "stealHorse",

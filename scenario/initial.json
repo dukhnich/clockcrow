@@ -1,0 +1,15 @@
+{
+  "startLocation": {
+    "locationId": "start"
+  },
+  "finalLocation": {
+    "locationId": "townhall",
+    "sceneId": "TH02"
+  },
+  "inventory": [
+    {
+      "id": "money",
+      "qty": 3
+    }
+  ]
+}
