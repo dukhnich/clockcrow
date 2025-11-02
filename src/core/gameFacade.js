@@ -2,15 +2,18 @@ const path = require("node:path");
 const { FileSaver, AutoSaver } = require("./saver.js");
 const { Game } = require("./game.js");
 const { FinishState } = require("./state.js");
+const { FileTextCache } = require("../utils/file-text-cache.js");
 
 class GameFacade {
   #saver;
   #game;
   #autosave;
-
+  #bannerShown = false;
+  #textCache;
   constructor(opts = {}) {
     const saveFile = opts.saveFile || path.join(process.cwd(), "saves", "slot1.json");
     this.#saver = opts.saver || new FileSaver(saveFile);
+    this.#textCache = opts.textCache || new FileTextCache();
 
     const saved = this.#saver.load();
     this.#game = opts.game || new Game({
@@ -35,6 +38,16 @@ class GameFacade {
 
     this.#autosave = new AutoSaver(this.#saver, this.#game);
   }
+  async #printBannerOnce() {
+    if (this.#bannerShown) return;
+    const file = path.join(process.cwd(), "scenario", "banner.txt");
+    const banner = this.#textCache.readText(file, "");
+    if (banner && banner.trim().length > 0) {
+      this.#game?.view?.clear?.();
+      await this.#game?.view?.showBanner?.(banner);
+    }
+    this.#bannerShown = true;
+  }
 
   get game() { return this.#game; }
   get saver() { return this.#saver; }
@@ -46,6 +59,7 @@ class GameFacade {
   }
 
   async run(ctx = {}) {
+    await this.#printBannerOnce();
     for (;;) {
       const result = await this.step(ctx);
       if (!result || result === "exit" || (typeof result === "object" && result.exit)) {

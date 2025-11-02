@@ -65,6 +65,12 @@ class CLIInquirerView extends IGameView {
         console.log(message);
     }
 
+    async showBanner(banner) {
+      console.log(banner);
+      console.log("");
+      await this.promptText("Грати");
+    }
+
     async promptText(question) {
         const answers = await this.#inquirer.prompt([
             {
