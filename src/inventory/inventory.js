@@ -2,18 +2,20 @@ const { Observer } = require("../utils/observer.js");
 class Item {
     #name;
     #description;
-    constructor(name, description) {
+    #effect
+    constructor(name, description, effect) {
         this.#name = name;
         this.#description = description;
+        this.#effect = effect;
     }
     get name() { return this.#name; }
     get description() { return this.#description; }
-    effect() { return null; }
+    get effect() { return this.#effect; }
 };
 class TraitItem extends Item {
     #traitsValues;
-    constructor(name, description, traitsValues = []) {
-        super(name, description);
+    constructor(name, description, effect, traitsValues = []) {
+        super(name, description, effect);
         this.#traitsValues = traitsValues;
     }
     get traitsValues() { return this.#traitsValues; }

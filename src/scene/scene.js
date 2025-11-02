@@ -249,13 +249,14 @@ class SceneAssembler {
 
 class SceneController {
   #timeManager
-  constructor({ view, assembler, events, timeManager, effects, inventory }) {
+  constructor({ view, assembler, events, timeManager, effects, inventory, itemStore }) {
     this.#timeManager = timeManager;
     this.view = view;
     this.assembler = assembler;
     this.events = events;
     this.effects = effects;
     this.inventory = inventory;
+    this.itemStore = itemStore;
   }
 
   async run(scene, initialCtx = {}) {
@@ -273,7 +274,14 @@ class SceneController {
         continue;
       }
       if (picked === "inventory") {
-        await this.view.showInventory(this.inventory?.getSnapshot?.() || { counts: {}, items: [] });
+        const snap = this.inventory?.getSnapshot?.() || { counts: {}, items: [] };
+        const friendlyCounts = {};
+        for (const [id, qty] of Object.entries(snap.counts || {})) {
+          const dto = this.itemStore?.getDTO?.(id);
+          const label = dto?.name || id;
+          friendlyCounts[label] = qty;
+        }
+        await this.view.showInventory({ ...snap, counts: friendlyCounts });
         continue;
       }
 

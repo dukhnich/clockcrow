@@ -1,8 +1,10 @@
 class MovementManager {
   #cache;
-  constructor({ cache }) {
+  #speed
+  constructor({ cache , speed = 1}) {
     if (!cache) throw new Error("MovementManager requires a SceneCache");
     this.#cache = cache;
+    this.#speed = 1;
   }
 
   get pointer() { return this.#cache.pointer; }

@@ -5,6 +5,7 @@ const { TimeManager } = require("./timeManager.js");
 const { TraitsManager } = require("../traits/traitsManager.js");
 const { TraitsStore } = require("../traits/traitsStore.js");
 const { CLIInquirerView } = require("../view/view.js");
+const { ItemStore } = require("../inventory/item-store.js");
 
 const { SceneCache } = require("./cache.js");
 const { SceneController, SceneAssembler } = require("../scene/scene.js");
@@ -33,6 +34,7 @@ class Game {
   #eventLog;
   #world;
   #initialInventory;
+  #itemStore;
 
   #sceneCache;
   #movement;
@@ -45,6 +47,7 @@ class Game {
     this.#view = opts.view || new CLIInquirerView();
     this.#timeManager = opts.timeManager || new TimeManager();
     this.#inventory = opts.inventory || new Inventory();
+    this.#itemStore = new ItemStore();
 
     const traitsStore = new TraitsStore();
     const traitModels = traitsStore.getAll();
@@ -107,6 +110,7 @@ class Game {
       timeManager: this.#timeManager,
       effects: this.#effects,
       inventory: this.#inventory,
+      itemStore: this.#itemStore,
     });
 
     if (this.#initialInventory) {
@@ -145,7 +149,7 @@ class Game {
       : null;
     return { start, final, inventory };
   }
-
+  get itemStore() { return this.#itemStore; }
   get worldSnapshot() {
     return this.#world.getSnapshot();
   }
