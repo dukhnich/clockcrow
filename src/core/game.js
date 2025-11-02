@@ -146,6 +146,15 @@ class Game {
     return { start, final, inventory };
   }
 
+  get worldSnapshot() {
+    return this.#world.getSnapshot();
+  }
+  applyWorldSnapshot(snapshot) {
+    if (!snapshot) return;
+    this.#world.loadSnapshot(snapshot);
+    this.#syncSceneInventory();
+  }
+
   navigate(payload) {
     this.#events.emit("go", payload);
   }

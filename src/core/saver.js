@@ -28,6 +28,8 @@ class FileSaver extends Saver {
         },
         traits: game.traitsSnapshot || {},
         domainEvents: game.domainEventsSnapshot || [],
+        inventory: game.inventory?.getCountsSnapshot?.() || {},
+        world: game.worldSnapshot || null
       };
       if (typeof tm?.currentTime === "number") {
         data.time = tm.currentTime;

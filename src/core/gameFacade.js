@@ -26,6 +26,12 @@ class GameFacade {
     if (saved?.domainEvents) {
       this.#game.setDomainEventsFromSnapshot(saved.domainEvents);
     }
+    if (saved?.inventory) {
+      this.#game.inventory.applyCountsSnapshot(saved.inventory);
+    }
+    if (saved?.world) {
+      this.#game.applyWorldSnapshot(saved.world);
+    }
 
     this.#autosave = new AutoSaver(this.#saver, this.#game);
   }
