@@ -1,5 +1,5 @@
 const { Hint } = require("./hint.js");
-const { InitialState } = require("./state.js");
+const { NewGameState, ResultsState, GameOverState } = require("./state.js");
 const { Inventory } = require("../inventory/inventory.js");
 const { TimeManager } = require("./timeManager.js");
 const { TraitsManager } = require("../traits/traitsManager.js");
@@ -38,7 +38,7 @@ class Game {
   #finalPtr;
   #gameOverHandled = false;
   constructor(opts = {}) {
-    this.#state = opts.state || new InitialState();
+    this.#state = opts.state || new NewGameState();
     this.#view = opts.view || new CLIInquirerView();
     this.#timeManager = opts.timeManager || new TimeManager();
     this.#inventory = opts.inventory || new Inventory();
@@ -101,6 +101,41 @@ class Game {
 
     this.#addListeners();
   }
+
+  navigate(payload) {
+    this.#events.emit("go", payload);
+  }
+  handleNewGame() {
+    // Clear domain state and reset managers
+    this.#eventLog.clear();
+    this.#traitsManager.resetTraits();
+    if (typeof this.#timeManager.reset === "function") {
+      this.#timeManager.reset();
+    } else if (typeof this.#timeManager.setTime === "function") {
+      this.#timeManager.setTime(8);
+    }
+    this.#gameOverHandled = false;
+    this.navigate({locationId: "start"});
+  }
+
+  async handleHearResult() {
+    const base = this.#traitsManager.computeTraitsResult();
+    const catalog = this.#sceneCache.getResultsCatalog();
+    const enriched = this.#enrichTraitsResult(base, catalog);
+    this.#view.showTraitsResult(enriched);
+    this.#view.exit();
+  }
+
+  handleGameOver() {
+    if (this.#gameOverHandled) return;
+    this.#gameOverHandled = true;
+
+    this.#eventLog.add("effect:gameOver");
+
+    const { locationId, sceneId } = this.#finalPtr || {};
+    this.navigate({ locationId, sceneId });
+  }
+
   #addListeners() {
     this.#addTraitsItemListeners();
     // Navigation
@@ -108,30 +143,22 @@ class Game {
       this.#movement.go(payload);
     });
 
-    // Advance time if the effect payload carries a time cost
     this.#events.on("effect", (eff) => {
       const t = Number(eff && eff.time);
       if (t > 0) this.#timeManager.tick(t);
     });
 
     this.#events.on("hearResult", () => {
-      const base = this.#traitsManager.computeTraitsResult();
-      const catalog = this.#sceneCache.getResultsCatalog();
-      const enriched = this.#enrichTraitsResult(base, catalog);
-      this.#view.showTraitsResult(enriched);
-      this.#view.exit();
+      this.changeState(new ResultsState());
     });
+
     this.#events.on("newGame", () => {
-      this.#eventLog.clear();
-      this.#traitsManager.resetTraits();
-      this.#timeManager.reset();
-      this.#gameOverHandled = false;
-      this.#events.emit("go", {locationId: "start"});
+      this.changeState(new NewGameState());
     });
 
     this.#timeManager.subscribe((e) => {
-      if (e && e.gameOver) {
-        this.#onGameOver();
+      if (e?.gameOver) {
+        this.changeState(new GameOverState());
       }
     });
   }
@@ -162,20 +189,6 @@ class Game {
       defaults: defaults || {}
     };
     return result;
-  }
-  #onGameOver() {
-    if (this.#gameOverHandled) return;
-    this.#gameOverHandled = true;
-
-    // Mark in domain log and notify listeners
-    this.#eventLog.add("gameOver");
-    // Optional domain hooks similar to EffectInterpreter
-    this.#events.emit("effect:gameOver", { token: "gameOver" });
-    this.#events.emit("gameOver", { time: this.#timeManager.currentTime });
-
-    // Navigate to final scene
-    const fin = this.#finalPtr;
-    this.#events.emit("go", fin);
   }
   #addTraitsItemListeners() {
       this.#inventory.subscribe((event) => {

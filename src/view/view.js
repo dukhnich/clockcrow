@@ -261,7 +261,7 @@ class CLIInquirerView extends IGameView {
       console.log(bgLine + spacer + textLine);
     }
   }
-  showTraitsResult(result) {
+  async showTraitsResult(result) {
     const title = chalkPipe('magenta.bold');
     const key = chalkPipe('cyan');
     const val = chalkPipe('white.bold');

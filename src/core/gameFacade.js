@@ -1,6 +1,7 @@
 const path = require("node:path");
 const { FileSaver, AutoSaver } = require("./saver.js");
 const { Game } = require("./game.js");
+const { FinishState } = require("./state.js");
 
 class GameFacade {
   #saver;
@@ -42,7 +43,7 @@ class GameFacade {
     for (;;) {
       const result = await this.step(ctx);
       if (!result || result === "exit" || (typeof result === "object" && result.exit)) {
-        this.#game.view.exit();
+        this.#game.changeState(new FinishState());
         break;
       };
     }
