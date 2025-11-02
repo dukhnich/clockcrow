@@ -39,6 +39,10 @@ class IGameView {
   finishGame() {
     throw new Error("Method 'finishGame()' must be implemented.");
   }
+  exit() {
+    throw new Error("Method 'exit()' must be implemented.");
+  }
+  async showInventory(snapshot) { throw new Error("Method 'showInventory()' must be implemented."); }
 
   clear() {
         throw new Error("Method 'clear()' must be implemented.");
@@ -147,6 +151,35 @@ class CLIInquirerView extends IGameView {
       const text = `⏳ ${time} ${window === 'day' ? '☀️' : '🌙'})`;
       console.log(window === 'day' ? day(text) : night(text));
     }
+  async showInventory(snapshot) {
+    const title = chalkPipe('cyan.bold');
+    const key = chalkPipe('white');
+    const val = chalkPipe('white.bold');
+
+    console.log(title("== Майно =="));
+    const counts = (snapshot && snapshot.counts) || {};
+    const items = Array.isArray(snapshot?.items) ? snapshot.items : [];
+
+    const ids = Object.keys(counts);
+    if (!ids.length && !items.length) {
+      console.log("Ніц нема.");
+      console.log("");
+      await this.promptText("Продовжити пошуки...");
+      return;
+    }
+
+    if (ids.length) {
+      console.log(key("Stackables:"));
+      ids.forEach(id => console.log(`  ${id}: ${val(counts[id])}`));
+      console.log("");
+    }
+    if (items.length) {
+      console.log(key("Речі:"));
+      items.forEach(it => console.log(`  ${it.name}${it.description ? ` — ${it.description}` : ""}`));
+      console.log("");
+    }
+    await this.promptText("Продовжити пошуки...");
+  }
 
   async showPath(paths, opts = {}) {
     const includeBack = opts.includeBack !== false;

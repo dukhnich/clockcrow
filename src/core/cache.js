@@ -174,7 +174,8 @@ class SceneCache {
       description: Array.isArray(sceneObj.description) ? sceneObj.description : (sceneObj.description || ""),
       optionIds: Array.isArray(sceneObj.optionIds) ? sceneObj.optionIds : [],
       path: Array.isArray(sceneObj.path) ? sceneObj.path : (Array.isArray(info.path) ? info.path : []),
-      npcIds: Array.isArray(sceneObj.npcIds) ? sceneObj.npcIds : []
+      npcIds: Array.isArray(sceneObj.npcIds) ? sceneObj.npcIds : [],
+      inventory: Array.isArray(sceneObj.inventory) ? sceneObj.inventory : []
     });
   }
 

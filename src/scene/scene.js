@@ -105,6 +105,10 @@ class SceneAssembler {
       ...sceneChoices,
     ]);
 
+    if (!merged.some(c => c.id === "inventory")) {
+      merged.push({ id: "inventory", name: "Оглянути своє майно" });
+    }
+
     if (!merged.some(c => c.id === "exit")) {
       merged.push({ id: "exit", name: "Exit" });
     }
@@ -243,16 +247,15 @@ class SceneAssembler {
   }
 }
 
-// Handles "talk:<id>" selection to pick NPC and refresh merged options.
-// Returns chosen action id or navigation "go:<locationId>" to the caller.
 class SceneController {
   #timeManager
-  constructor({ view, assembler, events, timeManager, effects }) {
+  constructor({ view, assembler, events, timeManager, effects, inventory }) {
     this.#timeManager = timeManager;
     this.view = view;
     this.assembler = assembler;
-    this.events = events; // EventsManager
-    this.effects = effects; // EffectInterpreter (injected)
+    this.events = events;
+    this.effects = effects;
+    this.inventory = inventory;
   }
 
   async run(scene, initialCtx = {}) {
@@ -267,6 +270,10 @@ class SceneController {
       // Talk flow: pick NPC and refresh
       if (picked.startsWith("talk:")) {
         ctx.currentNpcId = picked.split(":")[1];
+        continue;
+      }
+      if (picked === "inventory") {
+        await this.view.showInventory(this.inventory?.getSnapshot?.() || { counts: {}, items: [] });
         continue;
       }
 
