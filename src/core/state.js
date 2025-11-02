@@ -24,9 +24,7 @@ class FinishState extends State {
 
 class GameOverState {
   onEnter(game) {
-    if (game._didHandleGameOver && typeof game._didHandleGameOver === "function" && game._didHandleGameOver()) {
-      return;
-    }
+    if (typeof game.didHandleGameOver === "function" && game.didHandleGameOver()) return;
     game.handleGameOver();
   }
   onExit() {}

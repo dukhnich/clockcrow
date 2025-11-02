@@ -125,7 +125,9 @@ class Game {
     this.#view.showTraitsResult(enriched);
     this.#view.exit();
   }
-
+  didHandleGameOver() {
+    return this.#gameOverHandled === true;
+  }
   handleGameOver() {
     if (this.#gameOverHandled) return;
     this.#gameOverHandled = true;
