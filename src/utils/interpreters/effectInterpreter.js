@@ -134,7 +134,7 @@ class EffectInterpreter extends Interpreter {
     this.eventLog = eventLog;
   }
 
-  async interpret(effectDef, { timeCost } = {}) {
+  async interpret(effectDef, { timeCost, kind } = {}) {
     const expr = EffectFactory.from(effectDef);
     const ctx = {
       events: this.events,
@@ -146,7 +146,7 @@ class EffectInterpreter extends Interpreter {
 
     const t = Number(timeCost);
     if (Number.isFinite(t) && t > 0 && this.events) {
-      this.events.emit("effect", { time: t });
+      this.events.emit("effect", { time: t, kind });
     }
     return result;
   }
