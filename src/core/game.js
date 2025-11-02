@@ -17,6 +17,7 @@ const { EventsManager } = require("../utils/events/eventsManager.js");
 const { MovementManager } = require("./movementManager.js");
 const { EffectInterpreter } = require('../utils/interpreters/effectInterpreter.js');
 const { RequirementInterpreter } = require("../utils/interpreters/requirementsInterpreter");
+const { WorldState } = require("./worldState.js");
 
 const path = require("node:path");
 
@@ -30,6 +31,8 @@ class Game {
   #inventory;
   #effects;
   #eventLog;
+  #world;
+  #initialInventory;
 
   #sceneCache;
   #movement;
@@ -53,6 +56,11 @@ class Game {
     const npcStore = (opts.scene && opts.scene.npcStore) || new NpcStore(baseDir, jsonPool);
     const locationStore = (opts.scene && opts.scene.locationStore) || new LocationFlyweightStore();
 
+    this.#world = new WorldState();
+    const initial = this.#readInitial(jsonPool);
+    this.#start = opts.start || initial.start || { locationId: "start", sceneId: this.#deriveStartSceneId(baseDir, jsonPool, "market") };
+    this.#initialInventory = Array.isArray(opts.initialInventory) ? opts.initialInventory : (initial.inventory || null);
+
     this.#sceneCache = new SceneCache({
       baseDir,
       jsonPool,
@@ -60,7 +68,7 @@ class Game {
       npcStore,
       locationStore,
       timeManager: this.#timeManager,
-      start: opts.start || { locationId: "start", sceneId: this.#deriveStartSceneId(baseDir, jsonPool, "market") }
+      start: this.#start
     });
 
     this.#movement = new MovementManager({ cache: this.#sceneCache });
@@ -77,6 +85,7 @@ class Game {
       traits: this.#traitsManager,
       inventory: this.#inventory,
       locationStore,
+      world: this.#world,
     });
     const assembler = new SceneAssembler({
       optionStore,
@@ -97,16 +106,50 @@ class Game {
       events: this.#events,
       timeManager: this.#timeManager,
       effects: this.#effects,
+      inventory: this.#inventory,
     });
 
+    if (this.#initialInventory) {
+      this.#inventory.applyCountsSnapshot(this.#initialInventory);
+    }
+    this.#syncSceneInventory();
+
     this.#addListeners();
+  }
+
+  #syncSceneInventory() {
+    const scene = this.#sceneCache.currentScene();
+    if (!scene) return;
+    const inventory = scene.info.inventory;
+    this.#world.applySceneInventory(scene.locationId, inventory);
+  }
+
+  #readInitial(jsonPool) {
+    const file = path.join(process.cwd(), "scenario", "initial.json");
+    let data = {};
+    try {
+      data = jsonPool.readJson(file) || {};
+    } catch {
+      data = {};
+    }
+    const start = (data && typeof data.startLocation === "object")
+      ? { locationId: data.startLocation.locationId, sceneId: data.startLocation.sceneId }
+      : null;
+    const final = (data && typeof data.finalLocation === "object")
+      ? { locationId: data.finalLocation.locationId, sceneId: data.finalLocation.sceneId }
+      : null;
+    const inventory = Array.isArray(data.inventory)
+      ? data.inventory
+        .filter(e => e && e.id)
+        .map(e => ({ id: String(e.id), qty: Number.isFinite(Number(e.qty)) ? Number(e.qty) : 1 }))
+      : null;
+    return { start, final, inventory };
   }
 
   navigate(payload) {
     this.#events.emit("go", payload);
   }
   handleNewGame() {
-    // Clear domain state and reset managers
     this.#eventLog.clear();
     this.#traitsManager.resetTraits();
     if (typeof this.#timeManager.reset === "function") {
@@ -114,8 +157,15 @@ class Game {
     } else if (typeof this.#timeManager.setTime === "function") {
       this.#timeManager.setTime(8);
     }
+    this.#world.reset();
+    this.#inventory.resetInventory();
+    this.#inventory.resetCounts();
+    if (this.#initialInventory) {
+      this.#inventory.applyCountsSnapshot(this.#initialInventory);
+    }
     this.#gameOverHandled = false;
-    this.navigate({locationId: "start"});
+    // const start = this.#start || { locationId: "start" };
+    this.navigate({ locationId: "start" });
   }
 
   async handleHearResult() {
@@ -143,6 +193,7 @@ class Game {
     // Navigation
     this.#events.on("go", (payload) => {
       this.#movement.go(payload);
+      this.#syncSceneInventory();
     });
 
     this.#events.on("effect", (eff) => {
@@ -162,6 +213,29 @@ class Game {
       if (e?.gameOver) {
         this.changeState(new GameOverState());
       }
+    });
+    this.#events.on("add", (e) => {
+      const args = Array.isArray(e?.args) ? e.args : [];
+      const [target, id, qtyRaw] = args;
+      const qty = Number(qtyRaw);
+      if (target === "player" && id) {
+        this.#inventory.addById(id, Number.isFinite(qty) ? qty : 1);
+      } else if (target === "location" && id) {
+        const loc = this.currentLocationId;
+        this.#world.addLocationItem(loc, id);
+      }
+    });
+    this.#events.on("remove", (e) => {
+      const args = Array.isArray(e?.args) ? e.args : [];
+      const [target, id, qtyRaw] = args;
+      const qty = Number(qtyRaw);
+      if (target === "player" && id) {
+        this.#inventory.removeById(id, Number.isFinite(qty) ? qty : 1);
+      } else if (target === "location" && id) {
+        const loc = this.currentLocationId;
+        this.#world.removeLocationItem(loc, id);
+      }
+      // ignore currentNpc removal for now
     });
   }
   #enrichTraitsResult(res, cat) {
@@ -261,6 +335,8 @@ class Game {
 
     const result = await this.#sceneController.run(scene, ctx);
     this.#sceneCache.applyResult(result);
+    console.log('result')
+    this.#syncSceneInventory();
     return result;
   }
 

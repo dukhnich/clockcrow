@@ -20,12 +20,59 @@ class TraitItem extends Item {
 };
 
 class Inventory {
-    #items;
-    #observer;
-    constructor(items = []) {
-        this.#items = items;
-        this.#observer = new Observer();
+  #items;
+  #observer;
+  #counts;
+  constructor(items = []) {
+    this.#items = items;
+    this.#observer = new Observer();
+    this.#counts = new Map();
+  }
+  addById(id, qty = 1) {
+    const key = String(id);
+    const n = Number(qty);
+    const delta = Number.isFinite(n) ? n : 1;
+    const current = this.#counts.get(key) || 0;
+    const next = current + delta;
+    this.#counts.set(key, Math.max(0, next));
+    this.notify({ type: "countChanged", id: key, qty: this.#counts.get(key) });
+    return this.#counts.get(key);
+  }
+  removeById(id, qty = 1) {
+    return this.addById(id, -Number(qty));
+  }
+  has(id, qty = 1) {
+    const key = String(id);
+    const need = Number(qty);
+    const have = this.#counts.get(key) || 0;
+    return have >= (Number.isFinite(need) ? need : 1);
+  }
+  getCount(id) {
+    return this.#counts.get(String(id)) || 0;
+  }
+  getCountsSnapshot() {
+    const out = {};
+    for (const [k, v] of this.#counts.entries()) {
+      if (v > 0) out[k] = v;
     }
+    return out;
+  }
+  applyCountsSnapshot(arrOrObj) {
+    // Accept [{ id, qty }] or { id: qty }
+    this.resetCounts();
+    if (Array.isArray(arrOrObj)) {
+      arrOrObj.forEach(e => {
+        if (e && e.id) this.addById(e.id, e.qty || 1);
+      });
+    } else if (arrOrObj && typeof arrOrObj === "object") {
+      for (const [id, qty] of Object.entries(arrOrObj)) {
+        this.addById(id, qty);
+      }
+    }
+  }
+  resetCounts() {
+    this.#counts.clear();
+  }
     get(index) { return this.#items[index]; }
     set(index, item) {
         if (!(item instanceof Item)) throw new TypeError("Only Item instances allowed");
@@ -55,7 +102,7 @@ class Inventory {
         }
         return false;
     }
-    has(item) {
+  hasItemInstance(item) {
         return this.#items.includes(item);
     }
     getAll() {
@@ -64,6 +111,16 @@ class Inventory {
     resetInventory() {
         this.#items = [];
     }
+  getSnapshot() {
+    return {
+      counts: this.getCountsSnapshot(),
+      items: this.getAll().map(i => ({
+        name: i.name,
+        description: i.description,
+        type: (i.constructor && i.constructor.name) || "Item"
+      }))
+    };
+  }
 };
 
 module.exports = { Item, TraitItem, Inventory };
