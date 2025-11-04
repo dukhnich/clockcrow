@@ -1,0 +1,44 @@
+{
+  "id": "library",
+  "name": "Бібліотека Марцила",
+  "background": "background.txt",
+  "startSceneId": "LB00",
+  "scenes": [
+    {
+      "id": "LB00",
+      "locationId": "library",
+      "from": 9,
+      "to": 21,
+      "description": [
+        "Мовчазні стелажі тягнуться вгору, їх тіні схожі на рукопис часу.",
+        "Поруч — глобус із затертим сріблом, на стіні вченого портрет у рясі.",
+        "Літописець, заклавши сторінку аркушем, тихо мурмоче про роки великих пожеж і нових відкриттів."
+      ],
+      "npcIds": ["chronicle_writer"],
+      "optionIds": [
+        "searchManuscripts", "chooseKnowledgeFate_altruist", "chooseKnowledgeFate_selfish", "go"
+      ],
+      "path": [
+        "bridge", "tavern", "temple", "townhall", "pawnshop", "market"
+      ]
+    },
+    {
+      "id": "LB01",
+      "locationId": "library",
+      "from": 21,
+      "to": 5,
+      "description": [
+        "Вночі світиться тількі вікно у вежі. Серпантинові сходи ведуть під небо; нічне повітря пахне воском і чорнилом.",
+        "У телескопі — нескінченна мозаїка зір, і тут зіркар, у плащі з латунними ґудзиками, тихо бурмоче списки назв античних сузір’їв.",
+        "Кожна зірка — наче маленький манускрипт, що розгортається тільки в нічній тиші."
+      ],
+      "npcIds": ["stargazer"],
+      "optionIds": [
+        "mapConstellation", "go"
+      ],
+      "path": [
+        "bridge", "tavern", "temple", "townhall", "pawnshop", "market"
+      ]
+    }
+  ]
+}
