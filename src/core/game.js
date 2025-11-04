@@ -287,6 +287,7 @@ class Game {
           if (event.type === "traitItemAdded") {
               event.item.traitsValues.forEach(({ traitName, value }) => {
                   this.#traitsManager.incrementTrait(traitName, value);
+                  console.log(this.#traitsManager.computeTraitsResult())
               });
           }
           if (event.type === "traitItemRemoved") {
