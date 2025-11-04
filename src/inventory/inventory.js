@@ -13,6 +13,19 @@ class Item {
     get name() { return this.#name; }
     get description() { return this.#description; }
     get effect() { return this.#effect; }
+  handleAdd(inventory) {
+    inventory.notify({ type: "itemAdded", item: this });
+  }
+  handleRemove(inventory) {
+    inventory.notify({ type: "itemRemoved", item: this });
+  }
+  getDto() {
+    return {
+      name: this.#name,
+      description: this.#description,
+      effect: this.#effect,
+    }
+  }
 };
 class TraitItem extends Item {
     #traitsValues;
@@ -21,6 +34,20 @@ class TraitItem extends Item {
         this.#traitsValues = traitsValues;
     }
     get traitsValues() { return this.#traitsValues; }
+  handleAdd(inventory) {
+    super.handleAdd(inventory);
+    inventory.notify({ type: "traitItemAdded", item: this });
+  }
+  handleRemove(inventory) {
+    super.handleAdd(inventory);
+    inventory.notify({ type: "traitItemRemoved", item: this });
+  }
+  getDto() {
+    return {
+      ...super.getDto(),
+      traits: this.traitsValues,
+    }
+  }
 };
 
 class SpeedItem extends Item {
@@ -30,6 +57,20 @@ class SpeedItem extends Item {
       this.#speed = speed;
   }
   get speed() {return this.#speed};
+  handleAdd(inventory) {
+    super.handleAdd(inventory);
+    inventory.notify({ type: "speedItemAdded", item: this });
+  }
+  handleRemove(inventory) {
+    super.handleAdd(inventory);
+    inventory.notify({ type: "speedItemRemoved", item: this });
+  }
+  getDto() {
+    return {
+      ...super.getDto(),
+      speed: this.speed,
+    }
+  }
 };
 
 class Inventory {
@@ -159,29 +200,16 @@ class Inventory {
     unsubscribe(listener) { this.#observer.unsubscribe(listener); }
     notify(event) { this.#observer.notify(event); }
   add(item) {
-    console.log('add', item)
     if (!(item instanceof Item)) throw new TypeError("Only Item instances allowed");
     this.#items.push(item);
-    if (item instanceof TraitItem) {
-      this.notify({ type: "traitItemAdded", item });
-    }
-    if (item instanceof SpeedItem) {
-      this.notify({ type: "speedItemAdded", item });
-    }
-    this.notify({ type: "itemAdded", item });
+    item.handleAdd(this);
   }
 
   remove(item) {
     const idx = this.#items.indexOf(item);
     if (idx === -1) return false;
     this.#items.splice(idx, 1);
-    if (item instanceof TraitItem) {
-      this.notify({ type: "traitItemRemoved", item });
-    }
-    if (item instanceof SpeedItem) {
-      this.notify({ type: "speedItemRemoved", item });
-    }
-    this.notify({ type: "itemRemoved", item });
+    item.handleRemove(this);
     if (item[AUTO_TAG]) this.#autoItems.delete(item);
     return true;
   }
